@@ -1,0 +1,14 @@
+options set dateFormat %O
+eval unlink($ENV{'TMP_DIR'}."/".$ENV{'TRACKER'}."/deliverables.json")
+output $TMP_DIR/$TRACKER/deliverables.json
+go $TRACKER 
+items
+echo "["
+foreach
+do
+export -json
+echo ","
+done
+return
+return
+output

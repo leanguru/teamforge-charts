@@ -1,0 +1,4 @@
+eval unlink($ENV{'TMP_DIR'}."/".$ENV{'TRACKER'}."/workflow.json")
+output $TMP_DIR/$TRACKER/workflow.json
+go $TRACKER configure status fieldValues export -json
+output

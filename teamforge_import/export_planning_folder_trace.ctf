@@ -1,0 +1,79 @@
+set S9 parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S8 parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S7 parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S6 parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S5 parentFolderId->parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S4 parentFolderId->parentFolderId->parentFolderId->parentFolderId
+set S3 parentFolderId->parentFolderId->parentFolderId
+set S2 parentFolderId->parentFolderId
+set S1 parentFolderId
+set S0 id
+
+silent on
+
+set list
+loadcsv $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
+foreach push -e list print PlanningFolderId
+return
+
+options set dateFormat %O
+eval unlink($ENV{'TMP_DIR'}."/".$ENV{'TRACKER'}."/planning_folder_trace.txt")
+output $TMP_DIR/$TRACKER/planning_folder_trace.txt
+
+
+for planningfolder in $list
+do
+ go $planningfolder
+
+ try
+ do
+  print $S0, $S1, $S2, $S3, $S4, $S5, $S6, $S7, $S8, $S9
+ catch 
+  try
+  do
+   print $S0, $S1, $S2, $S3, $S4, $S5, $S6, $S7, $S8
+  catch 
+   try
+   do
+    print $S0, $S1, $S2, $S3, $S4, $S5, $S6, $S7
+   catch 
+    try
+    do
+     print $S0, $S1, $S2, $S3, $S4, $S5, $S6
+    catch 
+     try
+     do
+      print $S0, $S1, $S2, $S3, $S4, $S5
+     catch
+      try
+      do
+       print $S0, $S1, $S2, $S3, $S4
+      catch
+       try
+       do
+        print $S0, $S1, $S2, $S3
+       catch
+        try
+        do
+         print $S0, $S1, $S2
+        catch
+         try
+         do
+          print $S0, $S1
+         catch
+          print $S0
+         done
+        done
+       done
+      done
+     done
+    done
+   done
+  done
+ done
+done
+
+output 
+
+silent off
+

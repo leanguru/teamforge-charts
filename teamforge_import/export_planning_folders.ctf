@@ -1,0 +1,19 @@
+options set dateFormat %O
+eval unlink($ENV{'TMP_DIR'}."/".$ENV{'TRACKER'}."/planning_folders.json")
+output $TMP_DIR/$TRACKER/planning_folders.json
+
+
+set list
+loadcsv $TMP_DIR/$TRACKER/planning_folder_list_for_export.csv
+foreach push -e list print PlanningFolderId
+return
+
+echo "["
+for planningfolder in $list
+do
+ go $planningfolder export -json
+ echo ","
+done
+
+output
+
