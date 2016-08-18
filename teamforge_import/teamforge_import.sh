@@ -1,12 +1,21 @@
 #!/bin/bash
+
+#-----------------------------------------------------------------
+#
+# This script runs all the import scripts:
+# - Extracting the artifacts and planning folders
+# - Putting all relevant planning folder information into the
+#   artifact itself
+# - Import processed artifact data into MongoDB with an timestamp
+#   for future reference
+#
+# 19/08/2016 - Christian Gut
+#
+# -----------------------------------------------------------------
+
+
 set -e
 
-TRACKERS=(<TRACKER> <TRACKER>)
-MONGO_DB=cfdtest
-MONGO_USER=<USER>
-MONGO_PWD=<PASWORD>
-TMP_DIR=/tmp
-CTF_CMD=/opt/collabnet/teamforge/add-ons/teamforge_cli/bin/ctf
 
 # Export TMP_DIR variable so that they can be used in ctf cli
 export TMP_DIR
@@ -56,9 +65,9 @@ python generate_mongoimport_files.py
 # Import into MongoDB
 if [[ $MONGO_USER ]]
 then
-mongoimport -u $MONGO_USER -p $MONGO_PWD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER --jsonArray $TMP_DIR/$TRACKER/deliverables_mongoimport.json
-mongoimport -u $MONGO_USER -p $MONGO_PWD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER"_planning_folders" --jsonArray $TMP_DIR/$TRACKER/planning_folders_mongoimport.json
-mongoimport -u $MONGO_USER -p $MONGO_PWD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER"_workflows" --type json $TMP_DIR/$TRACKER/workflow_mongoimport.json
+mongoimport -u $MONGO_USER -p $MONGO_PASSWORD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER --jsonArray $TMP_DIR/$TRACKER/deliverables_mongoimport.json
+mongoimport -u $MONGO_USER -p $MONGO_PASSWORD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER"_planning_folders" --jsonArray $TMP_DIR/$TRACKER/planning_folders_mongoimport.json
+mongoimport -u $MONGO_USER -p $MONGO_PASSWORD -d $MONGO_DB --authenticationDatabase admin -c $TRACKER"_workflows" --type json $TMP_DIR/$TRACKER/workflow_mongoimport.json
 else
 mongoimport -d $MONGO_DB -c $TRACKER --jsonArray $TMP_DIR/$TRACKER/deliverables_mongoimport.json
 mongoimport -d $MONGO_DB -c $TRACKER"_planning_folders" --jsonArray $TMP_DIR/$TRACKER/planning_folders_mongoimport.json
@@ -69,9 +78,9 @@ fi
 # Remove Obsolete Entries
 if [[ $MONGO_USER ]]
 then
-mongo -u $MONGO_USER -p $MONGO_PWD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER'; load('./remove_obsolete_entries.js')"
-mongo -u $MONGO_USER -p $MONGO_PWD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER\_planning_folders'; load('./remove_obsolete_entries.js')"
-mongo -u $MONGO_USER -p $MONGO_PWD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER\_workflows'; load('./remove_obsolete_entries.js')"
+mongo -u $MONGO_USER -p $MONGO_PASSWORD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER'; load('./remove_obsolete_entries.js')"
+mongo -u $MONGO_USER -p $MONGO_PASSWORD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER\_planning_folders'; load('./remove_obsolete_entries.js')"
+mongo -u $MONGO_USER -p $MONGO_PASSWORD $MONGO_DB --authenticationDatabase admin --eval "collection='$TRACKER\_workflows'; load('./remove_obsolete_entries.js')"
 else
 mongo $MONGO_DB --eval "collection='$TRACKER'; load('./remove_obsolete_entries.js')"
 mongo $MONGO_DB --eval "collection='$TRACKER\_planning_folders'; load('./remove_obsolete_entries.js')"

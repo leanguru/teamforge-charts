@@ -25,92 +25,6 @@ app.config(function ($locationProvider) {
 
 
 app.controller('chartCtrl', function ($scope, $http, $location) {
-    // Set Authorization for RestHeart
-    $scope.planning_folders = [];
-
-    // Some basic configuration to access RestHeart
-    var base_url = "http://cfdtest.leanguru.pro:8080/cfdtest/"
-
-    $scope.onClick = function (points, evt) {
-        console.log(points, evt);
-    };
-
-    // Set chart options
-    $scope.options = {
-        tooltips: {
-            mode: "single"
-        },
-        hover: {
-            mode: "single"
-        },
-        scales: {
-            yAxes: [
-                {
-                    id: 'y-axis-1',
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
-                    scaleLabel: {
-                        display: true,
-                        labelString: 'Qty. of Artifacts'
-                    }
-                }
-            ]
-        }
-    };
-
-    // Set chart colors
-    var colors = [
-        'rgba(214,39,40,1)',
-        'rgba(44,160,44,1)',
-        'rgba(31,119,180,1)',
-        'rgba(174,199,232,1)',
-        'rgba(255,127,14,1)',
-        'rgba(255,187,120,1)',
-        'rgba(152,223,138,1)',
-        'rgba(148,103,189,1)',
-        'rgba(197,176,213,1)'
-    ];
-    Chart.defaults.global.colors = colors.map(function (color) {
-        return {
-            borderColor: color,
-            backgroundColor: color,
-            pointBorderColor: color,
-            pointBackgroundColor: color,
-        }
-    });
-
-    // Define some helper functions
-    var setUrlError = function (response) {
-        $scope.error_message = "Got HTTP " + response.status + " error while retrieving data: " + response.data.message;
-    };
-    var readGetParameter = function (field_name, default_value) {
-        var get_parameter = $location.search();
-        if (Object.keys(get_parameter).indexOf(field_name) > -1)
-            return get_parameter[field_name];
-        else
-            return default_value;
-    };
-    var createDataArray = function (labels, mongoDBArray) {
-        var return_array = {};
-        var value = 0;
-        if (mongoDBArray.length > 0) value = mongoDBArray[0].qty;
-
-        for (var i = 0; i < mongoDBArray.length; i++) return_array[mongoDBArray[i].importTimestamp] = mongoDBArray[i].qty;
-
-        for (var i = 0; i < labels.length; i++) {
-            if (return_array[labels[i]] != undefined) value = return_array[labels[i]];
-            return_array[labels[i]] = value;
-        }
-
-        return return_array;
-    };
-    var flattenDataArray = function (DataArray) {
-        var keys = Object.keys(DataArray).sort();
-        return keys.map(function (v) {
-            return DataArray[v];
-        })
-    };
     // Create Base64 Object
     var Base64 = {_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
         encode: function (e) {
@@ -202,6 +116,93 @@ app.controller('chartCtrl', function ($scope, $http, $location) {
         }
     };
 
+    // Set Restheart Authentication
+    if (restheart_config.username && restheart_config.password) {
+        $http.defaults.headers.common.Authorization = "Basic " + Base64.encode(restheart_config.username + ":" + restheart_config.password);
+    }
+
+    $scope.planning_folders = [];
+
+    $scope.onClick = function (points, evt) {
+        console.log(points, evt);
+    };
+
+    // Set chart options
+    $scope.options = {
+        tooltips: {
+            mode: "single"
+        },
+        hover: {
+            mode: "single"
+        },
+        scales: {
+            yAxes: [
+                {
+                    id: 'y-axis-1',
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    scaleLabel: {
+                        display: true,
+                        labelString: 'Qty. of Artifacts'
+                    }
+                }
+            ]
+        }
+    };
+
+    // Set chart colors
+    var colors = [
+        'rgba(214,39,40,1)',
+        'rgba(44,160,44,1)',
+        'rgba(31,119,180,1)',
+        'rgba(174,199,232,1)',
+        'rgba(255,127,14,1)',
+        'rgba(255,187,120,1)',
+        'rgba(152,223,138,1)',
+        'rgba(148,103,189,1)',
+        'rgba(197,176,213,1)'
+    ];
+    Chart.defaults.global.colors = colors.map(function (color) {
+        return {
+            borderColor: color,
+            backgroundColor: color,
+            pointBorderColor: color,
+            pointBackgroundColor: color,
+        }
+    });
+
+    // Define some helper functions
+    var setUrlError = function (response) {
+        $scope.error_message = "Got HTTP " + response.status + " error while retrieving data: " + response.data.message;
+    };
+    var readGetParameter = function (field_name, default_value) {
+        var get_parameter = $location.search();
+        if (Object.keys(get_parameter).indexOf(field_name) > -1)
+            return get_parameter[field_name];
+        else
+            return default_value;
+    };
+    var createDataArray = function (labels, mongoDBArray) {
+        var return_array = {};
+        var value = 0;
+
+        for (var i = 0; i < mongoDBArray.length; i++) return_array[mongoDBArray[i].importTimestamp] = mongoDBArray[i].qty;
+
+        for (var i = 0; i < labels.length; i++) {
+            if (return_array[labels[i]] != undefined) value = return_array[labels[i]];
+            return_array[labels[i]] = value;
+        }
+
+        return return_array;
+    };
+    var flattenDataArray = function (DataArray) {
+        var keys = Object.keys(DataArray).sort();
+        return keys.map(function (v) {
+            return DataArray[v];
+        })
+    };
+
     // Init function - to be loaded when graph is being generated
     $scope.init = function () {
         // Set loading flags
@@ -214,12 +215,6 @@ app.controller('chartCtrl', function ($scope, $http, $location) {
             $scope.error_message = "You must inform a tracker: '" + $scope.tracker + "' is not a valid tracker."
         }
 
-        // Set Restheart Authentication
-        $scope.restheart_username = readGetParameter('username','');
-        $scope.restheart_password = readGetParameter('password','');
-        if ( $scope.restheart_username && $scope.restheart_password ) {
-            $http.defaults.headers.common.Authorization = "Basic "+Base64.encode($scope.restheart_username+":"+$scope.restheart_password);
-        }
 
         // Set dates
         var df = (new Date(new Date().getTime() - 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
@@ -260,7 +255,7 @@ app.controller('chartCtrl', function ($scope, $http, $location) {
             $scope.getDataAndDraw();
         }
 
-        $http.get(base_url + $scope.tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders, setUrlError);
+        $http.get(restheart_config.base_url + $scope.tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders, setUrlError);
     }
 
     $scope.statusFilter = function (item) {
@@ -281,24 +276,24 @@ app.controller('chartCtrl', function ($scope, $http, $location) {
         var planned_quantities = null;
 
         // Get data
-        $http.get(base_url + $scope.tracker + "_workflows/_aggrs/list").then(function (response) {
+        $http.get(restheart_config.base_url + $scope.tracker + "_workflows/_aggrs/list").then(function (response) {
             workflow = response.data._embedded["rh:result"].map(function (val) {
                 return val._id
             }).reverse();
             drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
         }, setUrlError);
 
-        $http.get(base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
             status_quantities = response.data._embedded["rh:result"];
             drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
         }, setUrlError);
 
-        $http.get(base_url + $scope.tracker + "/_aggrs/target_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/target_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
             target_quantities = response.data._embedded["rh:result"];
             drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
         }, setUrlError);
 
-        $http.get(base_url + $scope.tracker + "/_aggrs/planned_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/planned_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
             planned_quantities = response.data._embedded["rh:result"];
             drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
         }, setUrlError);
