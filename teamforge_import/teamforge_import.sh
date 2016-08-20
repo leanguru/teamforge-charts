@@ -23,14 +23,14 @@ source ./config.cfg
 # Export TMP_DIR variable so that they can be used in ctf cli
 export TMP_DIR
 
+# Loop through all trackers
+for TRACKER in "${TRACKERS[@]}"; do
+
 # Make tmpdir for trackers
 if [ ! -d $TMP_DIR/$TRACKER ]
 then
 mkdir $TMP_DIR/$TRACKER
 fi
-
-# Loop through all trackers
-for TRACKER in "${TRACKERS[@]}"; do
 
 # Export TRACKER variable so that they can be used in ctf cli
 export TRACKER

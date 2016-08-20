@@ -64,10 +64,17 @@ for i in range(len(deliverables)):
     deliverables[i]['importTimestamp'] = timestamp_string
     planning_folder_id = deliverables[i]['planningFolderId']
     if planning_folder_id:
-        deliverables[i]['planningFolderTitle'] = planning_folder_lookup[planning_folder_id]['planningFolderTitle']
-        deliverables[i]['planningFolderPath'] = planning_folder_lookup[planning_folder_id]['planningFolderPath']
-        deliverables[i]['planningFolderDepth'] = planning_folder_lookup[planning_folder_id]['planningFolderDepth']
-        deliverables[i]['planningFolderTrace'] = planning_folder_lookup[planning_folder_id]['planningFolderTrace']
+       try:
+          deliverables[i]['planningFolderTitle'] = planning_folder_lookup[planning_folder_id]['planningFolderTitle']
+          deliverables[i]['planningFolderPath'] = planning_folder_lookup[planning_folder_id]['planningFolderPath']
+          deliverables[i]['planningFolderDepth'] = planning_folder_lookup[planning_folder_id]['planningFolderDepth']
+          deliverables[i]['planningFolderTrace'] = planning_folder_lookup[planning_folder_id]['planningFolderTrace']
+       except KeyError:
+          print "KeyError while trying to set planning folder data for %s in artefact: %s"%(planning_folder_id,planning_folder_lookup)
+          deliverables[i]['planningFolderTitle'] = None
+          deliverables[i]['planningFolderPath'] = None
+          deliverables[i]['planningFolderDepth'] = None
+          deliverables[i]['planningFolderTrace'] = None
 
 # Remove any Variable Names with whitespaces since we can't process them
 def removeWhiteSpaces(dictionary):
