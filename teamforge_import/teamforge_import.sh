@@ -13,9 +13,12 @@
 #
 # -----------------------------------------------------------------
 
+BASEDIR=$(dirname "$0")
+cd $BASEDIR
 
 set -e
 
+source ./config.cfg
 
 # Export TMP_DIR variable so that they can be used in ctf cli
 export TMP_DIR

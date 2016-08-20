@@ -9,7 +9,10 @@
 #
 # -----------------------------------------------------------------
 
-source config.cfg
+BASEDIR=$(dirname "$0")
+cd $BASEDIR
+
+source ./config.cfg
 
 # Set aggregates for tracker itself
 for TRACKER in "${TRACKERS[@]}"; do
