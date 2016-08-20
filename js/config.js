@@ -1,5 +1,5 @@
 var restheart_config = {
-    base_url: "http://teamforge-charts.leanguru.pro:8080/cfdtest/",
-    username: "cfdtest",
-    password: "CapSSA113"
+    base_url: "http://<HOST>:<PORT>/<MONGO_DB>/",
+    username: "<USERNAME>",
+    password: "<PASSWORD>"
 }
