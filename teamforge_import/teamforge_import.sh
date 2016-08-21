@@ -42,7 +42,7 @@ echo "]" >> $TMP_DIR/$TRACKER/deliverables_processed.json
 
 # Generate list of all planning folders which appear in exported artifacts
 echo "PlanningFolderId" > $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
-cat $TMP_DIR/$TRACKER/deliverables_processed.json | jq '.[] | .planningFolderId' | gawk -F "\"" '{print $2}' | sort | uniq | tail -n +2 >> $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
+cat $TMP_DIR/$TRACKER/deliverables_processed.json | jq '.[] | .planningFolderId' | gawk -F "\"" '{print $2}' | sort | uniq | grep plan >> $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
 
 # Trace artifacts
 $CTF_CMD export_planning_folder_trace.ctf
