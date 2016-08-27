@@ -1,111 +1,10 @@
 /*---------------------------------------------------------------------------------------------------------------------
  The Angular Application
-
- configurable with the following get parameters:
-
- - tracker
- - date_from
- - date_until
- - planned_date_field
- - aggregation_field
- - planning_folder
- - planning_folder_depth
-
  ---------------------------------------------------------------------------------------------------------------------*/
 
 var app = angular.module('teamforgeChartsApp', ['ui.select', 'ngSanitize', 'chart.js']);
 
-// Create Base64 Object
-var Base64 = {_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
-    encode: function (e) {
-        var t = "";
-        var n, r, i, s, o, u, a;
-        var f = 0;
-        e = Base64._utf8_encode(e);
-        while (f < e.length) {
-            n = e.charCodeAt(f++);
-            r = e.charCodeAt(f++);
-            i = e.charCodeAt(f++);
-            s = n >> 2;
-            o = (n & 3) << 4 | r >> 4;
-            u = (r & 15) << 2 | i >> 6;
-            a = i & 63;
-            if (isNaN(r)) {
-                u = a = 64
-            } else if (isNaN(i)) {
-                a = 64
-            }
-            t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a)
-        }
-        return t
-    },
-    decode: function (e) {
-        var t = "";
-        var n, r, i;
-        var s, o, u, a;
-        var f = 0;
-        e = e.replace(/[^A-Za-z0-9+/=]/g, "");
-        while (f < e.length) {
-            s = this._keyStr.indexOf(e.charAt(f++));
-            o = this._keyStr.indexOf(e.charAt(f++));
-            u = this._keyStr.indexOf(e.charAt(f++));
-            a = this._keyStr.indexOf(e.charAt(f++));
-            n = s << 2 | o >> 4;
-            r = (o & 15) << 4 | u >> 2;
-            i = (u & 3) << 6 | a;
-            t = t + String.fromCharCode(n);
-            if (u != 64) {
-                t = t + String.fromCharCode(r)
-            }
-            if (a != 64) {
-                t = t + String.fromCharCode(i)
-            }
-        }
-        t = Base64._utf8_decode(t);
-        return t
-    },
-    _utf8_encode: function (e) {
-        e = e.replace(/rn/g, "n");
-        var t = "";
-        for (var n = 0; n < e.length; n++) {
-            var r = e.charCodeAt(n);
-            if (r < 128) {
-                t += String.fromCharCode(r)
-            } else if (r > 127 && r < 2048) {
-                t += String.fromCharCode(r >> 6 | 192);
-                t += String.fromCharCode(r & 63 | 128)
-            } else {
-                t += String.fromCharCode(r >> 12 | 224);
-                t += String.fromCharCode(r >> 6 & 63 | 128);
-                t += String.fromCharCode(r & 63 | 128)
-            }
-        }
-        return t
-    },
-    _utf8_decode: function (e) {
-        var t = "";
-        var n = 0;
-        var r = c1 = c2 = 0;
-        while (n < e.length) {
-            r = e.charCodeAt(n);
-            if (r < 128) {
-                t += String.fromCharCode(r);
-                n++
-            } else if (r > 191 && r < 224) {
-                c2 = e.charCodeAt(n + 1);
-                t += String.fromCharCode((r & 31) << 6 | c2 & 63);
-                n += 2
-            } else {
-                c2 = e.charCodeAt(n + 1);
-                c3 = e.charCodeAt(n + 2);
-                t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);
-                n += 3
-            }
-        }
-        return t
-    }
-};
-
+// Configure location provider in order to allow to manipulate get parameter
 app.config(function ($locationProvider) {
     // use the HTML5 History API
     $locationProvider.html5Mode({
@@ -114,12 +13,156 @@ app.config(function ($locationProvider) {
     });
 });
 
+// Configure authentication for RESTHeart requests
+app.config(function ($httpProvider) {
+    // Create Base64 Object
+    var Base64 = {_keyStr: "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=",
+        encode: function (e) {
+            var t = "";
+            var n, r, i, s, o, u, a;
+            var f = 0;
+            e = Base64._utf8_encode(e);
+            while (f < e.length) {
+                n = e.charCodeAt(f++);
+                r = e.charCodeAt(f++);
+                i = e.charCodeAt(f++);
+                s = n >> 2;
+                o = (n & 3) << 4 | r >> 4;
+                u = (r & 15) << 2 | i >> 6;
+                a = i & 63;
+                if (isNaN(r)) {
+                    u = a = 64
+                } else if (isNaN(i)) {
+                    a = 64
+                }
+                t = t + this._keyStr.charAt(s) + this._keyStr.charAt(o) + this._keyStr.charAt(u) + this._keyStr.charAt(a)
+            }
+            return t
+        },
+        decode: function (e) {
+            var t = "";
+            var n, r, i;
+            var s, o, u, a;
+            var f = 0;
+            e = e.replace(/[^A-Za-z0-9+/=]/g, "");
+            while (f < e.length) {
+                s = this._keyStr.indexOf(e.charAt(f++));
+                o = this._keyStr.indexOf(e.charAt(f++));
+                u = this._keyStr.indexOf(e.charAt(f++));
+                a = this._keyStr.indexOf(e.charAt(f++));
+                n = s << 2 | o >> 4;
+                r = (o & 15) << 4 | u >> 2;
+                i = (u & 3) << 6 | a;
+                t = t + String.fromCharCode(n);
+                if (u != 64) {
+                    t = t + String.fromCharCode(r)
+                }
+                if (a != 64) {
+                    t = t + String.fromCharCode(i)
+                }
+            }
+            t = Base64._utf8_decode(t);
+            return t
+        },
+        _utf8_encode: function (e) {
+            e = e.replace(/rn/g, "n");
+            var t = "";
+            for (var n = 0; n < e.length; n++) {
+                var r = e.charCodeAt(n);
+                if (r < 128) {
+                    t += String.fromCharCode(r)
+                } else if (r > 127 && r < 2048) {
+                    t += String.fromCharCode(r >> 6 | 192);
+                    t += String.fromCharCode(r & 63 | 128)
+                } else {
+                    t += String.fromCharCode(r >> 12 | 224);
+                    t += String.fromCharCode(r >> 6 & 63 | 128);
+                    t += String.fromCharCode(r & 63 | 128)
+                }
+            }
+            return t
+        },
+        _utf8_decode: function (e) {
+            var t = "";
+            var n = 0;
+            var r = c1 = c2 = 0;
+            while (n < e.length) {
+                r = e.charCodeAt(n);
+                if (r < 128) {
+                    t += String.fromCharCode(r);
+                    n++
+                } else if (r > 191 && r < 224) {
+                    c2 = e.charCodeAt(n + 1);
+                    t += String.fromCharCode((r & 31) << 6 | c2 & 63);
+                    n += 2
+                } else {
+                    c2 = e.charCodeAt(n + 1);
+                    c3 = e.charCodeAt(n + 2);
+                    t += String.fromCharCode((r & 15) << 12 | (c2 & 63) << 6 | c3 & 63);
+                    n += 3
+                }
+            }
+            return t
+        }
+    };
 
-app.controller('cfdCtrl', function ($scope, $http, $location) {
-    // Set Restheart Authentication
     if (restheart_config.username && restheart_config.password) {
-        $http.defaults.headers.common.Authorization = "Basic " + Base64.encode(restheart_config.username + ":" + restheart_config.password);
+        $httpProvider.defaults.headers.common.Authorization = "Basic " + Base64.encode(restheart_config.username + ":" + restheart_config.password);
     }
+});
+
+/*---------------------------------------------------------------------------------------------------------------------
+ Create a data_conversion service
+ ---------------------------------------------------------------------------------------------------------------------*/
+
+app.factory('data_conversion', function () {
+    var data_conversion = {};
+
+    data_conversion.mongoDBArray2LabelDict = function (labels, mongoDBArray) {
+        var return_array = {};
+        var value = 0;
+
+        for (var i = 0; i < mongoDBArray.length; i++) return_array[mongoDBArray[i].importTimestamp] = mongoDBArray[i].qty;
+
+        for (var i = 0; i < labels.length; i++) {
+            if (return_array[labels[i]] != undefined) value = return_array[labels[i]];
+            return_array[labels[i]] = value;
+        }
+
+        return return_array;
+    };
+
+    data_conversion.flattenDataArray = function (DataArray) {
+        var keys = Object.keys(DataArray).sort();
+        return keys.map(function (v) {
+            return DataArray[v];
+        })
+    };
+
+    return data_conversion;
+});
+
+/*---------------------------------------------------------------------------------------------------------------------
+ Create a parameter service
+ ---------------------------------------------------------------------------------------------------------------------*/
+
+app.factory('parameter'['$location', function ($location) {
+    var parameter;
+    parameter.get = function (field_name, default_value) {
+        var get_parameter = $location.search();
+        if (Object.keys(get_parameter).indexOf(field_name) > -1)
+            return get_parameter[field_name];
+        else
+            return default_value;
+    }
+    return parameter
+}]);
+
+/*---------------------------------------------------------------------------------------------------------------------
+ The CFD Controller for cumulative flow diagrams
+ ---------------------------------------------------------------------------------------------------------------------*/
+
+app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
 
     $scope.planning_folders = [];
 
@@ -176,32 +219,6 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
     var setUrlError = function (response) {
         $scope.error_message = "Got HTTP " + response.status + " error while retrieving data: " + response.data.message;
     };
-    var readGetParameter = function (field_name, default_value) {
-        var get_parameter = $location.search();
-        if (Object.keys(get_parameter).indexOf(field_name) > -1)
-            return get_parameter[field_name];
-        else
-            return default_value;
-    };
-    var createDataArray = function (labels, mongoDBArray) {
-        var return_array = {};
-        var value = 0;
-
-        for (var i = 0; i < mongoDBArray.length; i++) return_array[mongoDBArray[i].importTimestamp] = mongoDBArray[i].qty;
-
-        for (var i = 0; i < labels.length; i++) {
-            if (return_array[labels[i]] != undefined) value = return_array[labels[i]];
-            return_array[labels[i]] = value;
-        }
-
-        return return_array;
-    };
-    var flattenDataArray = function (DataArray) {
-        var keys = Object.keys(DataArray).sort();
-        return keys.map(function (v) {
-            return DataArray[v];
-        })
-    };
 
     // Init function - to be loaded when graph is being generated
     $scope.init = function () {
@@ -210,7 +227,7 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
         $scope.loading_canvas = true;
 
         // Set tracker
-        $scope.tracker = readGetParameter('tracker')
+        $scope.tracker = parameter.get('tracker')
         if (!$scope.tracker || $scope.tracker.substr(0, 7) != 'tracker') {
             $scope.error_message = "You must inform a tracker: '" + $scope.tracker + "' is not a valid tracker."
         }
@@ -218,24 +235,24 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
 
         // Set dates
         var df = (new Date(new Date().getTime() - 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
-        $scope.date_from = new Date(readGetParameter('date_from', df) + "T12:00:00");
+        $scope.date_from = new Date(parameter.get('date_from', df) + "T12:00:00");
 
         var du = (new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
-        $scope.date_until = new Date(readGetParameter('date_until', du) + "T12:00:00");
+        $scope.date_until = new Date(parameter.get('date_until', du) + "T12:00:00");
 
         // Set planned date field
-        $scope.planned_date_field = readGetParameter('planned_date_field', 'plannedDate')
+        $scope.planned_date_field = parameter.get('planned_date_field', 'plannedDate')
 
         // Set value types
-        if (readGetParameter('aggregation_field', ''))
-            $scope.aggregation_field = "'$" + readGetParameter('aggregation_field', '') + "'";
+        if (parameter.get('aggregation_field', ''))
+            $scope.aggregation_field = "'$" + parameter.get('aggregation_field', '') + "'";
         else
             $scope.aggregation_field = 1;
 
 
         // Load and set Planning folders
-        var planning_folder_depth = readGetParameter('planning_folder_depth', 3)
-        var planning_folder_get_param = readGetParameter('planning_folder', null);
+        var planning_folder_depth = parameter.get('planning_folder_depth', 3)
+        var planning_folder_get_param = parameter.get('planning_folder', null);
 
         var setPlanningFolders = function (response) {
             $scope.planning_folders = angular.copy(response.data._embedded["rh:result"]);
@@ -327,8 +344,8 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
         // Set planned Quantities
         var target_and_planned_quantities = {};
 
-        var target_quantities = createDataArray(labels, target_quantities)
-        var planned_quantities = createDataArray(labels, planned_quantities)
+        var target_quantities = data_conversion.mongoDBArray2LabelDict(labels, target_quantities)
+        var planned_quantities = data_conversion.mongoDBArray2LabelDict(labels, planned_quantities)
         for (var i = 0; i < labels.length; i++) {
             if (labels[i] <= now_label)
                 target_and_planned_quantities[labels[i]] = target_quantities[labels[i]]
@@ -337,7 +354,7 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
         }
 
         $scope.series.push("Planned");
-        $scope.data.push(flattenDataArray(target_and_planned_quantities));
+        $scope.data.push(data_conversion.flattenDataArray(target_and_planned_quantities));
         $scope.datasetOverride.push({
             tension: 0,
             fill: false,
@@ -360,7 +377,7 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
 
             for (var i = 0; i < status_quantities.length; i++) {
                 if (status_quantities[i]._id == workflow_state) {
-                    data_array = createDataArray(labels, status_quantities[i].quantities);
+                    data_array = data_conversion.mongoDBArray2LabelDict(labels, status_quantities[i].quantities);
                     break;
                 }
             }
@@ -370,7 +387,7 @@ app.controller('cfdCtrl', function ($scope, $http, $location) {
                     cumulative_quantities[labels[i]] = cumulative_quantities[labels[i]] + data_array[labels[i]];
 
             $scope.series.push(workflow_state);
-            $scope.data.push(flattenDataArray(cumulative_quantities));
+            $scope.data.push(data_conversion.flattenDataArray(cumulative_quantities));
             $scope.datasetOverride.push({
                 tension: 0,
                 radius: 1,
