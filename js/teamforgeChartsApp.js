@@ -146,8 +146,8 @@ app.factory('data_conversion', function () {
  Create a parameter service
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.factory('parameter'['$location', function ($location) {
-    var parameter;
+app.factory('parameter',['$location', function ($location) {
+    var parameter = {};
     parameter.get = function (field_name, default_value) {
         var get_parameter = $location.search();
         if (Object.keys(get_parameter).indexOf(field_name) > -1)
@@ -165,6 +165,7 @@ app.factory('parameter'['$location', function ($location) {
 app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
 
     $scope.planning_folders = [];
+    $scope.error_message = '';
 
     $scope.onClick = function (points, evt) {
         console.log(points, evt);
@@ -215,7 +216,7 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
         }
     });
 
-    // Define some helper functions
+    // Define a function which sets an Url Error
     var setUrlError = function (response) {
         $scope.error_message = "Got HTTP " + response.status + " error while retrieving data: " + response.data.message;
     };
@@ -232,13 +233,17 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
             $scope.error_message = "You must inform a tracker: '" + $scope.tracker + "' is not a valid tracker."
         }
 
-
         // Set dates
         var df = (new Date(new Date().getTime() - 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
         $scope.date_from = new Date(parameter.get('date_from', df) + "T12:00:00");
 
         var du = (new Date(new Date().getTime() + 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
         $scope.date_until = new Date(parameter.get('date_until', du) + "T12:00:00");
+
+        // Check if date_from <= date_until
+        if ($scope.date_from > $scope.date_until) {
+            $scope.error_message = 'Invalid date range: date_from is greater than date_until';
+        }
 
         // Set planned date field
         $scope.planned_date_field = parameter.get('planned_date_field', 'plannedDate')
@@ -248,7 +253,6 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
             $scope.aggregation_field = "'$" + parameter.get('aggregation_field', '') + "'";
         else
             $scope.aggregation_field = 1;
-
 
         // Load and set Planning folders
         var planning_folder_depth = parameter.get('planning_folder_depth', 3)
@@ -272,6 +276,7 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
             $scope.getDataAndDraw();
         }
 
+        // Load planning folders
         $http.get(restheart_config.base_url + $scope.tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders, setUrlError);
     }
 
