@@ -112,7 +112,7 @@ app.config(function ($httpProvider) {
 });
 
 /*---------------------------------------------------------------------------------------------------------------------
- Create a data_conversion service
+ Create a data_conversion factory object
  ---------------------------------------------------------------------------------------------------------------------*/
 
 app.factory('data_conversion', function () {
@@ -143,10 +143,10 @@ app.factory('data_conversion', function () {
 });
 
 /*---------------------------------------------------------------------------------------------------------------------
- Create a parameter service
+ Create a parameter factory object
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.factory('parameter',['$location', function ($location) {
+app.factory('parameter', ['$location', function ($location) {
     var parameter = {};
     parameter.get = function (field_name, default_value) {
         var get_parameter = $location.search();
@@ -159,10 +159,63 @@ app.factory('parameter',['$location', function ($location) {
 }]);
 
 /*---------------------------------------------------------------------------------------------------------------------
+ Create a planning_folders service
+ ---------------------------------------------------------------------------------------------------------------------*/
+
+app.service('planning_folder_service', ['$http', function ($http) {
+    return {
+        planning_folder_list: null,
+        subscribers: [],
+        planning_folder_depth: 3,
+        tracker: null,
+        setTracker: function (tracker) {
+            this.tracker = tracker
+        },
+        setPlanningFolderDepth: function (planning_folder_depth) {
+            this.planning_folder_depth = planning_folder_depth
+        },
+        subscribe: function (fn) {
+            this.subscribers[tracker].push(fn);
+        },
+        fetch: function () {
+            var setPlanningFolders = function (response) {
+                this.planning_folder_list = angular.copy(response.data._embedded["rh:result"]);
+
+                if (this.planning_folder_list.length > 0) {
+                    this.planning_folder_list.unshift({
+                        id: this.planning_folder_list[0].parentFolderId,
+                        _id: '[root folder]'
+                    });
+                }
+
+                for (var i = 0; i < this.subscribers.length; i++) this.subscribers[i]();
+            }
+
+            $http.get(restheart_config.base_url + tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders);
+        },
+        getList: function () {
+            if (this.planning_folder_list == null) this.fetch();
+            return this.planning_folder_list;
+        },
+        getIndex: function (planning_folder_id) {
+                for (var i = 0; i < this.planning_folders.length; i++)
+                    if ($scope.planning_folders[i].id = planning_folder_id) return i;
+                return null;
+        },
+        getItem: function(planning_folder_id){
+            var index = this.getIndex(planning_folder_id);
+            if ( index == null) return null else return this.this.planning_folder_list[index];
+        }
+    }
+}])
+;
+
+
+/*---------------------------------------------------------------------------------------------------------------------
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
+app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, planning_folder_service) {
 
     $scope.planning_folders = [];
     $scope.error_message = '';
@@ -255,29 +308,23 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter) {
             $scope.aggregation_field = 1;
 
         // Load and set Planning folders
-        var planning_folder_depth = parameter.get('planning_folder_depth', 3)
+        planning_folder_service.setTracker($scope.tracker);
+        planning_folder_service.setPlanningFolderDepth(parameter.get('planning_folder_depth', 3));
         var planning_folder_get_param = parameter.get('planning_folder', null);
 
-        var setPlanningFolders = function (response) {
-            $scope.planning_folders = angular.copy(response.data._embedded["rh:result"]);
+        var setPlanningFolders = function () {
+            $scope.planning_folders = planning_folder_service.getList();
 
-            $scope.planning_folders.unshift({
-                id: $scope.planning_folders[0].parentFolderId,
-                _id: '[root folder]'
-            })
-
-            $scope.planning_folder = $scope.planning_folders[0];
-            if (planning_folder_get_param)
-                for (var i = 0; i < $scope.planning_folders.length; i++)
-                    if ($scope.planning_folders[i].id === planning_folder_get_param)
-                        $scope.planning_folder = $scope.planning_folders[i];
+            $scope.planning_folder = planning_folder_service.getItem(planning_folder_get_param);
 
             $scope.loading_planning_folders = false;
+
             $scope.getDataAndDraw();
         }
 
-        // Load planning folders
-        $http.get(restheart_config.base_url + $scope.tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders, setUrlError);
+        planning_folder_service.subscribe(setPlanningFolders);
+        $scope.loading_planning_folders = true;
+        planning_folder_service.fetch();
     }
 
     $scope.statusFilter = function (item) {
