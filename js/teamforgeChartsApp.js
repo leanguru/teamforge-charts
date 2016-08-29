@@ -159,63 +159,74 @@ app.factory('parameter', ['$location', function ($location) {
 }]);
 
 /*---------------------------------------------------------------------------------------------------------------------
- Create a planning_folders service
+ Create a planning_folders factory
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.service('planning_folder_service', ['$http', function ($http) {
-    return {
-        planning_folder_list: null,
-        subscribers: [],
-        planning_folder_depth: 3,
-        tracker: null,
-        setTracker: function (tracker) {
-            this.tracker = tracker
-        },
-        setPlanningFolderDepth: function (planning_folder_depth) {
-            this.planning_folder_depth = planning_folder_depth
-        },
-        subscribe: function (fn) {
-            this.subscribers[tracker].push(fn);
-        },
-        fetch: function () {
-            var setPlanningFolders = function (response) {
-                this.planning_folder_list = angular.copy(response.data._embedded["rh:result"]);
+app.factory('planning_folders', ['$http', function ($http) {
+    var planning_folders = {};
+    var planning_folder_list = null;
+    var subscribers = [];
+    var planning_folder_depth = 3;
+    var tracker = null;
 
-                if (this.planning_folder_list.length > 0) {
-                    this.planning_folder_list.unshift({
-                        id: this.planning_folder_list[0].parentFolderId,
-                        _id: '[root folder]'
-                    });
-                }
+    planning_folders.setTracker = function (tracker) {
+        tracker = tracker
+    };
 
-                for (var i = 0; i < this.subscribers.length; i++) this.subscribers[i]();
+    planning_folders.setPlanningFolderDepth = function (planning_folder_depth) {
+        planning_folder_depth = planning_folder_depth
+    };
+
+    planning.folders.subscribe = function (fn) {
+        subscribers.push(fn);
+    };
+
+    planning_folders.fetch = function () {
+        var setPlanningFolders = function (response) {
+            planning_folder_list = angular.copy(response.data._embedded["rh:result"]);
+
+            if (planning_folder_list.length > 0) {
+                planning_folder_list.unshift({
+                    id: planning_folder_list[0].parentFolderId,
+                    _id: '[root folder]'
+                });
             }
 
-            $http.get(restheart_config.base_url + tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders);
-        },
-        getList: function () {
-            if (this.planning_folder_list == null) this.fetch();
-            return this.planning_folder_list;
-        },
-        getIndex: function (planning_folder_id) {
-                for (var i = 0; i < this.planning_folders.length; i++)
-                    if ($scope.planning_folders[i].id = planning_folder_id) return i;
-                return null;
-        },
-        getItem: function(planning_folder_id){
-            var index = this.getIndex(planning_folder_id);
-            if ( index == null) return null else return this.this.planning_folder_list[index];
+            for (var i = 0; i < subscribers.length; i++) ubscribers[i]();
+        }
+
+        $http.get(restheart_config.base_url + tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders);
+    };
+
+    planning_folders.getList = function () {
+        if (planning_folder_list == null) planning_folders.fetch();
+        return planning_folder_list;
+    };
+
+    planning_folders.getIndex = function (planning_folder_id) {
+        for (var i = 0; i < planning_folders.length; i++)
+            if (planning_folders[i].id = planning_folder_id) return i;
+        return null;
+    };
+
+    planning_folders.getItem = function (planning_folder_id) {
+        var index = planning_folders.getIndex(planning_folder_id);
+        if (index == null) {
+            return null
+        }
+        else {
+            return planning_folder_list[index];
         }
     }
-}])
-;
 
+    return planning_folders
+}]);
 
 /*---------------------------------------------------------------------------------------------------------------------
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, planning_folder_service) {
+app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, planning_folders) {
 
     $scope.planning_folders = [];
     $scope.error_message = '';
@@ -313,9 +324,9 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         var planning_folder_get_param = parameter.get('planning_folder', null);
 
         var setPlanningFolders = function () {
-            $scope.planning_folders = planning_folder_service.getList();
+            $scope.planning_folders = planning_folders.getList();
 
-            $scope.planning_folder = planning_folder_service.getItem(planning_folder_get_param);
+            $scope.planning_folder = planning_folders.getItem(planning_folder_get_param);
 
             $scope.loading_planning_folders = false;
 
