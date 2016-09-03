@@ -23,6 +23,7 @@ describe('cfdCtrl:', function () {
 
         $httpBackend.flush();
 
-        expect($scope.planning_folder).toEqual('PlanningApp10101');
+        expect(planning_folders.getList()[0]._id).toEqual('[root folder]');
+        expect(planning_folders.getList()[0].id).toEqual('PlanningApp10101');
     });
 });

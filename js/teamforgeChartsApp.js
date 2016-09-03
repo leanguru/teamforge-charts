@@ -169,15 +169,15 @@ app.factory('planning_folders', ['$http', function ($http) {
     var planning_folder_depth = 3;
     var tracker = null;
 
-    planning_folders.setTracker = function (tracker) {
-        tracker = tracker
+    planning_folders.setTracker = function (tracker_id) {
+        tracker = tracker_id
     };
 
     planning_folders.setPlanningFolderDepth = function (planning_folder_depth) {
         planning_folder_depth = planning_folder_depth
     };
 
-    planning.folders.subscribe = function (fn) {
+    planning_folders.subscribe = function (fn) {
         subscribers.push(fn);
     };
 
@@ -319,8 +319,8 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
             $scope.aggregation_field = 1;
 
         // Load and set Planning folders
-        planning_folder_service.setTracker($scope.tracker);
-        planning_folder_service.setPlanningFolderDepth(parameter.get('planning_folder_depth', 3));
+        planning_folders.setTracker($scope.tracker);
+        planning_folders.setPlanningFolderDepth(parameter.get('planning_folder_depth', 3));
         var planning_folder_get_param = parameter.get('planning_folder', null);
 
         var setPlanningFolders = function () {
@@ -333,9 +333,9 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
             $scope.getDataAndDraw();
         }
 
-        planning_folder_service.subscribe(setPlanningFolders);
+        planning_folders.subscribe(setPlanningFolders);
         $scope.loading_planning_folders = true;
-        planning_folder_service.fetch();
+        planning_folders.fetch();
     }
 
     $scope.statusFilter = function (item) {
