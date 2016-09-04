@@ -162,10 +162,9 @@ app.factory('parameter', ['$location', function ($location) {
  Create a planning_folders factory
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.factory('planning_folders', ['$http', function ($http) {
+app.factory('planning_folders', ['$http', '$q', function ($http, $q) {
     var planning_folders = {};
     var planning_folder_list = null;
-    var subscribers = [];
     var planning_folder_depth = 3;
     var tracker = null;
 
@@ -177,25 +176,23 @@ app.factory('planning_folders', ['$http', function ($http) {
         planning_folder_depth = planning_folder_depth
     };
 
-    planning_folders.subscribe = function (fn) {
-        subscribers.push(fn);
-    };
-
     planning_folders.fetch = function () {
-        var setPlanningFolders = function (response) {
-            planning_folder_list = angular.copy(response.data._embedded["rh:result"]);
+        return $q(function (resolve, reject) {
+            var setPlanningFolders = function (response) {
+                planning_folder_list = angular.copy(response.data._embedded["rh:result"]);
 
-            if (planning_folder_list.length > 0) {
-                planning_folder_list.unshift({
-                    id: planning_folder_list[0].parentFolderId,
-                    _id: '[root folder]'
-                });
+                if (planning_folder_list.length > 0) {
+                    planning_folder_list.unshift({
+                        id: planning_folder_list[0].parentFolderId,
+                        _id: '[root folder]'
+                    });
+                    resolve();
+                }
             }
 
-            for (var i = 0; i < subscribers.length; i++) ubscribers[i]();
-        }
 
-        $http.get(restheart_config.base_url + tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders);
+            $http.get(restheart_config.base_url + tracker + "_planning_folders/_aggrs/list?pagesize=1000&avars={'planningFolderDepth':" + planning_folder_depth + "}").then(setPlanningFolders, reject);
+        });
     };
 
     planning_folders.getList = function () {
@@ -223,10 +220,49 @@ app.factory('planning_folders', ['$http', function ($http) {
 }]);
 
 /*---------------------------------------------------------------------------------------------------------------------
+ Create a workflow factory
+ ---------------------------------------------------------------------------------------------------------------------*/
+
+app.factory('workflow', ['$http', '$q', function ($http, $q) {
+    var workflow = {};
+    var workflow_list = null;
+    var tracker = null;
+
+    workflow.setTracker = function (tracker_id) {
+        tracker = tracker_id
+    };
+
+    workflow.subscribe = function (fn) {
+        subscribers.push(fn);
+    };
+
+    workflow.fetch = function () {
+        return $q(function (resolve, reject) {
+            var setWorkflow = function (response) {
+                workflow_list = response.data._embedded["rh:result"].map(function (val) {
+                    return val._id
+                }).reverse();
+
+                resolve();
+            }
+
+            $http.get(restheart_config.base_url + $scope.tracker + "_workflows/_aggrs/list").then(setWorkflow, reject);
+        });
+    };
+
+    workflow.get = function () {
+        if (workflow_list == null) workflow.fetch();
+        return workflow_list;
+    };
+
+    return workflow
+}]);
+
+/*---------------------------------------------------------------------------------------------------------------------
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, planning_folders) {
+app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, planning_folders, workflow) {
 
     $scope.planning_folders = [];
     $scope.error_message = '';
@@ -291,12 +327,6 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         $scope.loading_planning_folders = true;
         $scope.loading_canvas = true;
 
-        // Set tracker
-        $scope.tracker = parameter.get('tracker')
-        if (!$scope.tracker || $scope.tracker.substr(0, 7) != 'tracker') {
-            $scope.error_message = "You must inform a tracker: '" + $scope.tracker + "' is not a valid tracker."
-        }
-
         // Set dates
         var df = (new Date(new Date().getTime() - 14 * 24 * 60 * 60 * 1000)).toISOString().substr(0, 10);
         $scope.date_from = new Date(parameter.get('date_from', df) + "T12:00:00");
@@ -318,6 +348,12 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         else
             $scope.aggregation_field = 1;
 
+        // Set tracker
+        $scope.tracker = parameter.get('tracker')
+        if (!$scope.tracker || $scope.tracker.substr(0, 7) != 'tracker') {
+            $scope.error_message = "You must inform a tracker: '" + $scope.tracker + "' is not a valid tracker."
+        }
+
         // Load and set Planning folders
         planning_folders.setTracker($scope.tracker);
         planning_folders.setPlanningFolderDepth(parameter.get('planning_folder_depth', 3));
@@ -333,9 +369,9 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
             $scope.getDataAndDraw();
         }
 
-        planning_folders.subscribe(setPlanningFolders);
+
         $scope.loading_planning_folders = true;
-        planning_folders.fetch();
+        planning_folders.fetch().then(setPlanningFolders());
     }
 
     $scope.statusFilter = function (item) {
@@ -350,18 +386,12 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         $scope.loading_canvas = true;
 
         // Set data
-        var workflow = null;
         var status_quantities = null;
         var target_quantities = null;
         var planned_quantities = null;
 
         // Get data
-        $http.get(restheart_config.base_url + $scope.tracker + "_workflows/_aggrs/list").then(function (response) {
-            workflow = response.data._embedded["rh:result"].map(function (val) {
-                return val._id
-            }).reverse();
-            drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
-        }, setUrlError);
+        workflow.fetch().then(drawGraph,setUrlError)
 
         $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
             status_quantities = response.data._embedded["rh:result"];
@@ -379,7 +409,7 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         }, setUrlError);
     }
 
-    var drawGraph = function (workflow, status_quantities, target_quantities, planned_quantities) {
+    var drawGraph = function (status_quantities, target_quantities, planned_quantities) {
 
         // Exit if workflow or status quanties aren't defined
         if (!workflow || !status_quantities || !target_quantities || !planned_quantities) {
