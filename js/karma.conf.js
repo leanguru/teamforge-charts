@@ -11,7 +11,8 @@ module.exports = function(karma){
       "./angular.min.js",
       "./angular-*.js",
       "./select.js",
-      "./teamforgeChartsApp.js",
+      "teamforge-charts-app.js",
+      "teamforge-charts-ctrl-cfd.js",
       "./tests/*-test.js"
     ],
  

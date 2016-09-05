@@ -1,4 +1,4 @@
-describe('cfdCtrl:', function () {
+describe('planning_folders:', function () {
     var $httpBackend, planning_folders;
 
     beforeEach(module('teamforgeChartsApp'));
