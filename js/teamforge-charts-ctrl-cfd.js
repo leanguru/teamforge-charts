@@ -102,15 +102,20 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         var setPlanningFolders = function () {
             $scope.planning_folders = planning_folders.getList();
 
-            $scope.planning_folder = planning_folders.getItem(planning_folder_get_param);
+            if (planning_folder_get_param) {
+                $scope.planning_folder = planning_folders.getItem(planning_folder_get_param);
+            } else {
+                $scope.planning_folder = $scope.planning_folders[0];
+            }
 
             $scope.loading_planning_folders = false;
 
+            $scope.getDataAndDraw();
         }
 
 
         $scope.loading_planning_folders = true;
-        planning_folders.fetch().then(setPlanningFolders).then($scope.getDataAndDraw);
+        planning_folders.fetch().then(setPlanningFolders);
     }
 
     $scope.statusFilter = function (item) {
@@ -130,22 +135,29 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         var planned_quantities = null;
 
         // Get data
-        workflow.fetch().then(drawGraph,setUrlError)
+        workflow.setTracker($scope.tracker);
+        workflow.fetch().then(function () { drawGraph(status_quantities, target_quantities, planned_quantities) }, setUrlError);
 
-        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
-            status_quantities = response.data._embedded["rh:result"];
-            drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
-        }, setUrlError);
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+            function (response) {
+                status_quantities = response.data._embedded["rh:result"];
+                drawGraph(status_quantities, target_quantities, planned_quantities);
+            },
+            setUrlError);
 
-        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/target_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
-            target_quantities = response.data._embedded["rh:result"];
-            drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
-        }, setUrlError);
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/target_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+            function (response) {
+                target_quantities = response.data._embedded["rh:result"];
+                drawGraph(status_quantities, target_quantities, planned_quantities);
+            },
+            setUrlError);
 
-        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/planned_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(function (response) {
-            planned_quantities = response.data._embedded["rh:result"];
-            drawGraph(workflow, status_quantities, target_quantities, planned_quantities);
-        }, setUrlError);
+        $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/planned_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+            function (response) {
+                planned_quantities = response.data._embedded["rh:result"];
+                drawGraph(status_quantities, target_quantities, planned_quantities);
+            },
+            setUrlError);
     }
 
     var drawGraph = function (status_quantities, target_quantities, planned_quantities) {

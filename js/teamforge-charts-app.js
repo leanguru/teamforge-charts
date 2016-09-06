@@ -210,8 +210,7 @@ app.factory('planning_folders', ['$http', '$q', function ($http, $q) {
         var index = planning_folders.getIndex(planning_folder_id);
         if (index == null) {
             return null
-        }
-        else {
+        } else {
             return planning_folder_list[index];
         }
     }
