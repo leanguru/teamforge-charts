@@ -69,7 +69,7 @@ cat $TMP_DIR/$TRACKER/workflow.json >> $TMP_DIR/$TRACKER/workflow_list.json
 echo "}" >> $TMP_DIR/$TRACKER/workflow_list.json
 
 # Add Timestamp to workflow
-jq  'map( .+{importTimestamp:"'$TIMESTAMP'"} )' $TMP_DIR/$TRACKER/workflow_list.json > $TMP_DIR/$TRACKER/workflow_mongoimport.json
+jq  '.+{importTimestamp:"'$TIMESTAMP'"}' $TMP_DIR/$TRACKER/workflow_list.json > $TMP_DIR/$TRACKER/workflow_mongoimport.json
 
 
 # Generate mongoimport json files
