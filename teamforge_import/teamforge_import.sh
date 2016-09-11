@@ -20,6 +20,9 @@ set -e
 
 source ./config.cfg
 
+# Define timestamp as string
+TIMESTAMP=`date +%Y-%m-%dT%H:%M:%S`
+
 # Export TMP_DIR variable so that they can be used in ctf cli
 export TMP_DIR
 
@@ -27,18 +30,18 @@ export TMP_DIR
 for TRACKER in "${TRACKERS[@]}"; do
 
 # Make tmpdir for trackers
-if [ ! -d $TMP_DIR/$TRACKER ]
-then
-mkdir $TMP_DIR/$TRACKER
-fi
+mkdir -p $TMP_DIR/$TRACKER
 
 # Export TRACKER variable so that they can be used in ctf cli
 export TRACKER
 
 # Export artifacts from teamforge
 $CTF_CMD export_deliverables.ctf
-head -n -1 $TMP_DIR/$TRACKER/deliverables.json > $TMP_DIR/$TRACKER/deliverables_processed.json
-echo "]" >> $TMP_DIR/$TRACKER/deliverables_processed.json
+head -n -1 $TMP_DIR/$TRACKER/deliverables.json > $TMP_DIR/$TRACKER/deliverables_list.json
+echo "]" >> $TMP_DIR/$TRACKER/deliverables_list.json
+
+# Add Timestamp to deliverables
+jq  'map( .+{importTimestamp:"'$TIMESTAMP'"} )' $TMP_DIR/$TRACKER/deliverables_list.json > $TMP_DIR/$TRACKER/deliverables_processed.json
 
 # Generate list of all planning folders which appear in exported artifacts
 echo "PlanningFolderId" > $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
@@ -53,14 +56,21 @@ cat $TMP_DIR/$TRACKER/planning_folder_trace.txt | tr ',' '\n' | sort | uniq | gr
 
 # Export planning folders from teamforge
 $CTF_CMD export_planning_folders.ctf
-head -n -1 $TMP_DIR/$TRACKER/planning_folders.json > $TMP_DIR/$TRACKER/planning_folders_processed.json 
-echo "]" >>  $TMP_DIR/$TRACKER/planning_folders_processed.json
+head -n -1 $TMP_DIR/$TRACKER/planning_folders.json > $TMP_DIR/$TRACKER/planning_folders_list.json
+echo "]" >>  $TMP_DIR/$TRACKER/planning_folders_list.json
+
+# Add Timestamp to planning folders
+jq  'map( .+{importTimestamp:"'$TIMESTAMP'"} )' $TMP_DIR/$TRACKER/planning_folders_list.json > $TMP_DIR/$TRACKER/planning_folders_processed.json
 
 # Export Workflow for tracker
 $CTF_CMD export_workflow.ctf
-echo '{"workflow":' > $TMP_DIR/$TRACKER/workflow_processed.json 
-cat $TMP_DIR/$TRACKER/workflow.json >> $TMP_DIR/$TRACKER/workflow_processed.json 
-echo "}" >> $TMP_DIR/$TRACKER/workflow_processed.json
+echo '{"workflow":' > $TMP_DIR/$TRACKER/workflow_list.json
+cat $TMP_DIR/$TRACKER/workflow.json >> $TMP_DIR/$TRACKER/workflow_list.json
+echo "}" >> $TMP_DIR/$TRACKER/workflow_list.json
+
+# Add Timestamp to workflow
+jq  '.+{importTimestamp:"'$TIMESTAMP'"}' $TMP_DIR/$TRACKER/workflow_list.json > $TMP_DIR/$TRACKER/workflow_mongoimport.json
+
 
 # Generate mongoimport json files
 python generate_mongoimport_files.py
@@ -94,15 +104,17 @@ fi
 rm $TMP_DIR/$TRACKER/deliverables.json
 rm $TMP_DIR/$TRACKER/deliverables_mongoimport.json
 rm $TMP_DIR/$TRACKER/deliverables_processed.json
+rm $TMP_DIR/$TRACKER/deliverables_list.json
 rm $TMP_DIR/$TRACKER/planning_folder_trace.txt
 rm $TMP_DIR/$TRACKER/planning_folder_list_for_export.csv
 rm $TMP_DIR/$TRACKER/planning_folder_list_for_trace.csv
 rm $TMP_DIR/$TRACKER/planning_folders.json
 rm $TMP_DIR/$TRACKER/planning_folders_mongoimport.json
 rm $TMP_DIR/$TRACKER/planning_folders_processed.json
+rm $TMP_DIR/$TRACKER/planning_folders_list.json
 rm $TMP_DIR/$TRACKER/workflow.json
 rm $TMP_DIR/$TRACKER/workflow_mongoimport.json
-rm $TMP_DIR/$TRACKER/workflow_processed.json
+rm $TMP_DIR/$TRACKER/workflow_list.json
 
 # END of Loop
 done
