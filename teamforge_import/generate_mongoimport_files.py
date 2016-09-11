@@ -16,7 +16,6 @@ planning_folder_lookup = {}
 for i in range(len(planning_folders)):
    id = planning_folders[i]['id']
    title = planning_folders[i]['title']
-   planning_folders[i]['importTimestamp'] = timestamp_string
    planning_folder_lookup[id] = {'planningFolderTitle': title}
 
 # Add Folder Paths to Planning Folder Lookup
@@ -63,7 +62,6 @@ for i in range(len(deliverables)):
       elif deliverables[i][key] is not None and deliverables[i][key].replace('.', '', 1).isdigit():
          deliverables[i][key] = float(deliverables[i][key])
 
-   deliverables[i]['importTimestamp'] = timestamp_string
    planning_folder_id = deliverables[i]['planningFolderId']
    if planning_folder_id:
       deliverables[i]['planningFolderTitle'] = planning_folder_lookup[planning_folder_id]['planningFolderTitle']
@@ -90,13 +88,5 @@ with open(path + '/deliverables_mongoimport.json', 'w') as outfile:
    json.dump(deliverables, outfile)
 
 
-# Generate mongoimport file for workflow
-with open(path + '/workflow_processed.json') as data_file:
-   workflow = json.load(data_file)
-
-workflow['importTimestamp'] = timestamp_string
-
-with open(path + '/workflow_mongoimport.json', 'w') as outfile:
-   json.dump(workflow, outfile)
 
 
