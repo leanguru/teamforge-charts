@@ -2,6 +2,9 @@
 
 set -e
 
+BASEDIR=$(dirname "$0")
+cd $BASEDIR
+
 # Set Tracker to be imported
 TRACKER=<TRACKER>
 
