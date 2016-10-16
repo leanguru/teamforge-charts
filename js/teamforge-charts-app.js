@@ -118,11 +118,13 @@ app.config(function ($httpProvider) {
 app.factory('data_conversion', function () {
     var data_conversion = {};
 
-    data_conversion.mongoDBArray2LabelDict = function (labels, mongoDBArray) {
+    data_conversion.mongoDBArray2LabelDict = function (labels, mongoDBArray, first_values_default) {
         var return_array = {};
-        var value = 0;
 
         for (var i = 0; i < mongoDBArray.length; i++) return_array[mongoDBArray[i].importTimestamp] = mongoDBArray[i].qty;
+
+        var value = null;
+        if ( typeof(first_values_default) != 'undefined' ) value = first_values_default;
 
         for (var i = 0; i < labels.length; i++) {
             if (return_array[labels[i]] != undefined) value = return_array[labels[i]];

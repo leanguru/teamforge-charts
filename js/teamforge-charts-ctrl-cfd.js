@@ -136,31 +136,33 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
 
         // Get data
         workflow.setTracker($scope.tracker);
-        workflow.fetch().then(function () { drawGraph(status_quantities, target_quantities, planned_quantities) }, setUrlError);
+        workflow.fetch().then(function () {
+            $scope.drawGraph(status_quantities, target_quantities, planned_quantities)
+        }, setUrlError);
 
         $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/status_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
             function (response) {
                 status_quantities = response.data._embedded["rh:result"];
-                drawGraph(status_quantities, target_quantities, planned_quantities);
+                $scope.drawGraph(status_quantities, target_quantities, planned_quantities);
             },
             setUrlError);
 
         $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/target_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
             function (response) {
                 target_quantities = response.data._embedded["rh:result"];
-                drawGraph(status_quantities, target_quantities, planned_quantities);
+                $scope.drawGraph(status_quantities, target_quantities, planned_quantities);
             },
             setUrlError);
 
         $http.get(restheart_config.base_url + $scope.tracker + "/_aggrs/planned_quantities?pagesize=1000&avars={'aggregation_field': " + $scope.aggregation_field + ",'planned_date_field': '$" + $scope.planned_date_field + "','planning_folder':'" + $scope.planning_folder.id + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
             function (response) {
                 planned_quantities = response.data._embedded["rh:result"];
-                drawGraph(status_quantities, target_quantities, planned_quantities);
+                $scope.drawGraph(status_quantities, target_quantities, planned_quantities);
             },
             setUrlError);
     }
 
-    var drawGraph = function (status_quantities, target_quantities, planned_quantities) {
+    $scope.drawGraph = function (status_quantities, target_quantities, planned_quantities) {
 
         // Exit if workflow or status quanties aren't defined
         if (!workflow.get() || !status_quantities || !target_quantities || !planned_quantities) {
@@ -181,15 +183,15 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         for (var d = date_from; d <= date_to; d.setDate(d.getDate() + 1)) labels.push(d.toISOString().substring(0, 10));
         $scope.labels = labels;
 
-        // Create accumulated Planned Quantities (assuming that array is already ordered0
+        // Create accumulated Planned Quantities (assuming that array is already ordered)
         for (var i = 1; i < planned_quantities.length; i++)
             planned_quantities[i].qty = planned_quantities[i - 1].qty + planned_quantities[i].qty
 
         // Set planned Quantities
         var target_and_planned_quantities = {};
 
-        var target_quantities = data_conversion.mongoDBArray2LabelDict(labels, target_quantities)
-        var planned_quantities = data_conversion.mongoDBArray2LabelDict(labels, planned_quantities)
+        var target_quantities = data_conversion.mongoDBArray2LabelDict(labels, target_quantities, 0)
+        var planned_quantities = data_conversion.mongoDBArray2LabelDict(labels, planned_quantities,0)
         for (var i = 0; i < labels.length; i++) {
             if (labels[i] <= now_label)
                 target_and_planned_quantities[labels[i]] = target_quantities[labels[i]]
@@ -210,10 +212,7 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
         // Set Status quantities
         var cumulative_quantities = {};
         for (var i = 0; i < labels.length; i++) {
-            if (labels[i] <= now_label)
-                cumulative_quantities[labels[i]] = 0
-            else
-                cumulative_quantities[labels[i]] = null
+            cumulative_quantities[labels[i]] = null
         }
 
         workflow.get().reverse().forEach(function (workflow_state) {
@@ -227,7 +226,7 @@ app.controller('cfdCtrl', function ($scope, $http, data_conversion, parameter, p
             }
 
             for (var i = 0; i < labels.length && labels[i] <= now_label; i++)
-                if (data_array != null)
+                if (data_array != null && data_array[labels[i]] != null)
                     cumulative_quantities[labels[i]] = cumulative_quantities[labels[i]] + data_array[labels[i]];
 
             $scope.series.push(workflow_state);
