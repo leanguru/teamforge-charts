@@ -2,7 +2,7 @@
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, planning_folders, workflow) {
+app.controller('epuCtrl', function ($scope, $http) {
 
     $scope.error_message = '';
 
@@ -15,20 +15,38 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
             mode: "single"
         },
         scales: {
+            xAxes: [
+                {
+                    stacked: true
+                }
+            ],
             yAxes: [
                 {
-                    id: 'y-axis-1',
-                    display: true,
-                    position: 'left',
                     stacked: true,
-                    scaleLabel: {
-                        display: false,
-                        labelString: 'User'
-                    }
                 }
             ]
         }
     };
+
+    // Set chart colors
+    var colors = [
+        'rgba(31,119,180,1)',
+        'rgba(174,199,232,1)',
+        'rgba(255,127,14,1)',
+        'rgba(255,187,120,1)',
+        'rgba(152,223,138,1)',
+        'rgba(148,103,189,1)',
+        'rgba(197,176,213,1)'
+    ];
+    Chart.defaults.global.colors = colors.map(function (color) {
+        return {
+            borderColor: color,
+            backgroundColor: color,
+            pointBorderColor: color,
+            pointBackgroundColor: color,
+        }
+    });
+
 
     // Define a function which sets an Url Error
     var setUrlError = function (response) {
@@ -42,14 +60,14 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
         $scope.loading_canvas = true;
 
         // Set dates
-        $scope.date_from = new Date(config.date_from + "T12:00:00");
-        $scope.date_until = new Date(config.date_until + "T12:00:00");
+        $scope.date_from = new Date(epu_config_default.date_from + "T12:00:00");
+        $scope.date_until = new Date(epu_config_default.date_until + "T12:00:00");
 
         // Check if date_from <= date_until
         if ($scope.date_from > $scope.date_until) {
             $scope.error_message = 'Invalid date range: date_from is greater than date_until';
         }
-        $scope.getDataAndDraw(cpe_config_default)
+        $scope.getDataAndDraw(epu_config_default)
     }
 
     $scope.getDataAndDraw = function (config) {
@@ -60,12 +78,12 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
         var efforts_per_user = [];
 
         // Set function to get last timestamp and then to
-        var fetch_efforts_per_user = function (tracker, date_field) {
-            return $http.get(restheart_config.base_url + tracker + "/_aggrs/last_import_timestamp").then(
+        var fetch_efforts_per_user = function (tracker, planned_date_field) {
+            return $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
                 function (response) {
-                    var import_timestamp = response.data._embedded["rh:result"][0].import_timestamp;
+                    var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
 
-                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'"+import_timestamp+"','planned_date_field': '$" + date_field + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field': '$" + planned_date_field + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
                             efforts_per_user.push(response.data._embedded["rh:result"]);
                             $scope.drawGraph(config, efforts_per_user);
@@ -76,7 +94,7 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
         };
 
         for (var i in config.trackers) {
-            fetch_efforts_per_user(config.trackers[i].id,config.trackers[i].date_field)
+            fetch_efforts_per_user(config.trackers[i].id, config.trackers[i].planned_date_field)
         }
     }
 
@@ -88,17 +106,22 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
         }
 
         // Aggregate all tracker data
-        var aggregated_effort_per_user = {};
+        var aggregated_estimated_efforts_per_user = {};
+        var aggregated_actual_efforts_per_user = {};
+        var aggregated_remaining_efforts_per_user = {};
+
         for (var i in efforts_per_user) {
-            var user = efforts_per_user[i].assignedTo;
-            if ( typeof aggregated_estimated_effort_per_user[user] == "undefined" ) aggregated_estimated_effort_per_user[user] = 0;
-            aggregated_estimated_effort_per_user[user] = aggregated_estimated_effort_per_user[user] + efforts_per_user[i].estimatedEffort;
+            for (var j in efforts_per_user[i]) {
+                var user = efforts_per_user[i][j].assignedTo;
+                if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
+                aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
 
-            if ( typeof aggregated_actual_effort_per_user[user] == "undefined" ) aggregated_actual_effort_per_user[user] = 0;
-            aggregated_actual_effort_per_user[user] = efforts_per_user[i].actualEffort;
+                if (typeof aggregated_actual_efforts_per_user[user] == "undefined") aggregated_actual_efforts_per_user[user] = 0;
+                aggregated_actual_efforts_per_user[user] = efforts_per_user[i][j].actualEffort;
 
-            if ( typeof aggregated_remaining_effort_per_user[user] == "undefined" ) aggregated_remaining_effort_per_user[user] = 0;
-            aggregated_remaining_effort_per_user[user] = efforts_per_user[i].remainingEffort;
+                if (typeof aggregated_remaining_efforts_per_user[user] == "undefined") aggregated_remaining_efforts_per_user[user] = 0;
+                aggregated_remaining_efforts_per_user[user] = efforts_per_user[i][j].remainingEffort;
+            }
         }
 
 
@@ -108,10 +131,10 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
         $scope.data = [];
         $scope.datasetOverride = [];
 
-        $scope.labels = Object.keys(aggregated_estimated_effort_per_user).sort();
+        $scope.labels = Object.keys(aggregated_estimated_efforts_per_user).sort();
 
 
-        var flatten_array = function (array,labels) {
+        var flatten_array = function (array, labels) {
             var flat_array = []
             for (var i in labels) {
                 flat_array.push(array[labels[i]]);
@@ -119,22 +142,17 @@ app.controller('epuCtrl', function ($scope, $http, data_conversion, parameter, p
             return flat_array
         }
         $scope.series.push("Actual Effort");
-        $scope.data.push(flatten_array(aggregated_actual_effort_per_user,$scope.labels));
-        $scope.datasetOverride.push({
-                type: 'bar',
-                backgroundColor: 'blue'
-        });
+        $scope.data.push(flatten_array(aggregated_actual_efforts_per_user, $scope.labels));
 
         $scope.series.push("Remaining Effort");
-        $scope.datasets.push(flatten_array(aggregated_actual_effort_per_user,$scope.labels));
-        $scope.datasetOverride.push({
-                type: 'bar',
-                backgroundColor: 'red'
-        });
+        $scope.data.push(flatten_array(aggregated_remaining_efforts_per_user, $scope.labels));
 
         // Disable spinner
         $scope.loading_canvas = false;
     }
 
+    $scope.$on('chart-create', function (event, chart) {
+        document.getElementById('js-legend').innerHTML = chart.generateLegend();
+    });
 
 });
