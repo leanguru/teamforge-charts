@@ -43,12 +43,13 @@
     </style>
 </head>
 <body ng-app="teamforgeChartsApp" ng-controller="epuCtrl" ng-init="init()">
-<div class="container">
+
+<div class="container" ng-if="!plain_view">
     <div class="page-header">
         <div class="row">
             <div class="col-xs-12">
                 <h1>Effort Per User
-                    <small>({{ tracker }})</small>
+                    <small>({{ trackers }})</small>
                 </h1>
             </div>
         </div>
@@ -81,10 +82,11 @@
                     </div>
                     <div class="row" ng-show="! loading_canvas">
                         <div class="col-sm-9">
-                            <canvas id="line" class="chart chart-bar" chart-data="data"
+                            <canvas class="chart chart-bar" chart-data="data"
                                     chart-labels="labels" chart-series="series" chart-options="options"
                                     chart-dataset-override="datasetOverride" chart-click="onClick">
-                            </canvas>                         </div>
+                            </canvas>
+                        </div>
                         <div class="col-sm-3">
                             <div id="js-legend" class="chart-legend"></div>
                         </div>
@@ -95,7 +97,36 @@
         <div class="col-sm-1">
         </div>
     </div>
+</div>
 
+<div class="container" ng-if="plain_view">
+    <div class="page-header">
+        <div class="row">
+            <div class="col-xs-12">
+                <h1>Effort Per User
+                    <small>({{ trackers }})</small>
+                </h1>
+            </div>
+        </div>
+    </div>
+    <div class="row">
+        <div class="col-xs-12">
+            <div class="jumbotron" id="spinner-plain" style="height: 400px" ng-show="loading_canvas">
+            </div>
+            <div class="row" ng-show="! loading_canvas">
+                <div class="col-sm-9">
+                    <canvas class="chart chart-bar" chart-data="data"
+                            chart-labels="labels" chart-series="series" chart-options="options"
+                            chart-dataset-override="datasetOverride" chart-click="onClick">
+                    </canvas>
+                </div>
+                <div class="col-sm-3">
+                    <div id="js-legend-plain" class="chart-legend"></div>
+                </div>
+            </div>
+
+        </div>
+    </div>
 </div>
 
 </body>
@@ -124,5 +155,7 @@
         , position: 'absolute' // Element positioning
     }
     var target = document.getElementById('spinner');
+    var spinner = new Spinner(opts).spin(target);
+    var target = document.getElementById('spinner-plain');
     var spinner = new Spinner(opts).spin(target);
 </script>
