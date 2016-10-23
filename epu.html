@@ -42,12 +42,12 @@
         }
     </style>
 </head>
-<body ng-app="teamforgeChartsApp" ng-controller="cfdCtrl" ng-init="init()">
+<body ng-app="teamforgeChartsApp" ng-controller="epuCtrl" ng-init="init()">
 <div class="container">
     <div class="page-header">
         <div class="row">
             <div class="col-xs-12">
-                <h1>Cumulative Flow Diagram
+                <h1>Effort Per User
                     <small>({{ tracker }})</small>
                 </h1>
             </div>
@@ -67,46 +67,11 @@
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <div class="row">
-                        <div class="col-sm-12" id="planning_folder_dropdown">
-                            <ui-select ng-model="$parent.planning_folder" theme="selectize"
-                                       ng-disabled="loading_planning_folders"
-                                       title="Choose a planning folder" ng-show="! loading_planning_folders">
-                                <ui-select-match placeholder="Select or type ...">
-                                    {{$select.selected._id}} ({{$select.selected.id}} - {{$select.selected.status}})
-                                </ui-select-match>
-                                <ui-select-choices
-                                        repeat="pf in planning_folders | filter: statusFilter | filter: $select.search">
-                                    <span ng-bind-html="pf._id | highlight: $select.search"></span>
-                                    (
-                                    <small ng-bind-html="pf.id | highlight: $select.search"></small>
-                                    -
-                                    <small ng-bind-html="pf.status | highlight: $select.search"></small>
-                                    )
-                                </ui-select-choices>
-                            </ui-select>
-
-                            <ui-select theme="selectize"
-                                       ng-model="dummy"
-                                       ng-disabled="loading_planning_folders"
-                                       title="Choose a planning folder" ng-show="loading_planning_folders">
-                                <ui-select-match placeholder="Loading ..."></ui-select-match>
-                                <ui-select-choices repeat="i in []"></ui-select-choices>
-                            </ui-select>
-
-                        </div>
-                    </div>
-                    <div class="row">
-                        <div class="col-sm-5 col-xs-12">
+                        <div class="col-sm-8 col-xs-12">
                             <input type="date" ng-model="date_from"> to <input type="date"
                                                                                ng-model="date_until">
                         </div>
-                        <div class="col-sm-5 col-xs-4">
-                            Filter:
-                            <input type="checkbox" ng-model="planning_folder_not_started"> Not Started
-                            <input type="checkbox" ng-model="planning_folder_in_progress"> In Progress
-                            <input type="checkbox" ng-model="planning_folder_inactive"> Inactive
-                        </div>
-                        <div class="col-sm-2 col-xs-12">
+                        <div class="col-sm-4 col-xs-12">
                             <button class="btn btn-primary" ng-click="getDataAndDraw()">Redraw Graph</button>
                         </div>
                     </div>
@@ -119,8 +84,7 @@
                             <canvas id="line" class="chart chart-line" chart-data="data"
                                     chart-labels="labels" chart-series="series" chart-options="options"
                                     chart-dataset-override="datasetOverride" chart-click="onClick">
-                            </canvas>
-                        </div>
+                            </canvas>                         </div>
                         <div class="col-sm-3">
                             <div id="js-legend" class="chart-legend"></div>
                         </div>
