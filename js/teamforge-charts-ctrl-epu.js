@@ -82,12 +82,13 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.plain_view = config.plain_view == "true" || config.plain_view == 1;
 
         // Set dates
-        $scope.date_from = new Date(config.date_from + "T12:00:00");
-        $scope.date_until = new Date(config.date_until + "T12:00:00");
+        $scope.date = {};
+        $scope.date.from = new Date(config.date_from + "T12:00:00");
+        $scope.date.until = new Date(config.date_until + "T12:00:00");
 
-        // Check if date_from <= date_until
-        if ($scope.date_from > $scope.date_until) {
-            $scope.error_message = 'Invalid date range: date_from is greater than date_until';
+        // Check if date.from <= date.until
+        if ($scope.date.from > $scope.date.until) {
+            $scope.error_message = 'Invalid date range: date.from is greater than date.until';
         }
 
         $scope.getDataAndDraw();
@@ -106,7 +107,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
                 function (response) {
                     var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
 
-                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field': '$" + planned_date_field + "','datetime_from':'" + $scope.date_from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date_until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field': '$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
                             efforts_per_user.push(response.data._embedded["rh:result"]);
                             $scope.drawGraph(efforts_per_user);
@@ -128,7 +129,6 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     }
 
     $scope.drawGraph = function (efforts_per_user) {
-
         // Exit if not all efforts per user have been defined
         if (efforts_per_user.length < $scope.trackers_array.length) {
             return;
