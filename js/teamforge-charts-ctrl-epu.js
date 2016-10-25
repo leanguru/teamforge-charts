@@ -54,21 +54,19 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     };
 
     // Init function - to be loaded when graph is being generated
-    $scope.init = function () {
+    $scope.init = function (config) {
         // Set loading flags
         $scope.loading_canvas = true;
 
         // Set config
-        var config = angular.copy(epu_config_default);
+        if (typeof config == "undefined") config = angular.copy(epu_config_default);
 
         // Overwrite config with get parameters
         config.date_from = parameter.get('date_from', config.date_from);
         config.date_until = parameter.get('date_until', config.date_until);
         config.plain_view = parameter.get('plain_view', config.plain_view);
-        config.trackers = parameter.get('trackers', config.trackers)
+        config.trackers = parameter.get('trackers', config.trackers);
         config.planned_date_fields = parameter.get('planned_date_fields', config.planned_date_fields);
-
-
 
         // set trackers
         $scope.trackers = config.trackers;
@@ -103,11 +101,11 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
 
         // Set function to get last timestamp and then to
         var fetch_efforts_per_user = function (tracker, planned_date_field) {
-            return $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
+            $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
                 function (response) {
                     var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
 
-                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field': '$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field':'$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
                             efforts_per_user.push(response.data._embedded["rh:result"]);
                             $scope.drawGraph(efforts_per_user);
