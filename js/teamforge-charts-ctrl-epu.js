@@ -2,12 +2,12 @@
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('epuCtrl', function ($scope, $http, parameter) {
+app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
 
     $scope.error_message = '';
     $scope.users = {all: [], selected: []};
-    $scope.flags = {all_users: true};
-    $scope.meta_data = {import_timestamps: {}, direct_link: {}};
+    $scope.flags = {all_users: true, plain_view: false};
+    $scope.meta_data = {import_timestamps: {}, direct_link: $location.absUrl() };
 
     // Set chart options
     $scope.options = {
@@ -81,7 +81,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.planned_date_fields_array = config.planned_date_fields.split(",");
 
         // set plain view
-        $scope.plain_view = config.plain_view == "true" || config.plain_view == 1;
+        $scope.flags.plain_view = config.plain_view == "true" || config.plain_view == 1;
 
         // Set dates
         $scope.date = {};
@@ -109,6 +109,17 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     $scope.getDataAndDraw = function () {
         // Set spinner
         $scope.loading_canvas = true;
+
+        // Set direct link
+        $scope.meta_data.direct_link = $location.absUrl().split('?')[0]
+            +"?trackers="+$scope.trackers
+            +"&planned_date_fields="+$scope.planned_date_fields
+            +"&date_from="+$scope.date.from.toISOString().substr(0, 10)
+            +"&date_until="+$scope.date.until.toISOString().substr(0, 10);
+
+        if (! $scope.flags.all_users) $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&users="+$scope.users.selected.join(",");
+
+        $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&plain_view=1";
 
         // Set array of errors_per_user and then to fetch the errors per user (not very elegantly yet)
         var efforts_per_user = [];
@@ -207,7 +218,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     }
 
     $scope.$on('chart-create', function (event, chart) {
-        if ($scope.plain_view)
+        if ($scope.flags.plain_view)
             document.getElementById('js-legend-plain').innerHTML = chart.generateLegend();
         else
             document.getElementById('js-legend').innerHTML = chart.generateLegend();
