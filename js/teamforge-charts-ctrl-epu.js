@@ -7,6 +7,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     $scope.error_message = '';
     $scope.users = {all: [], selected: []};
     $scope.flags = {all_users: true};
+    $scope.meta_data = {import_timestamps: {}, direct_link: {}};
 
     // Set chart options
     $scope.options = {
@@ -117,6 +118,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
                 function (response) {
                     var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
+                    $scope.meta_data.import_timestamps[tracker] = new Date(import_timestamp);
 
                     $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field':'$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
