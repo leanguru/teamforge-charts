@@ -226,7 +226,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         // because $scope.users.selected will be updated only after that routine
         if (checklist_value == false) {
             $scope.flags.all_users = false;
-        } else if ( $scope.users.all.length-1 >= $scope.users.selected.length ) {
+        } else if ( $scope.users.selected.length >= $scope.users.all.length-1) {
             $scope.flags.all_users = true;
         }
     }
