@@ -58,6 +58,45 @@ describe('epuCtrl:', function () {
             expect($scope.date.until).toEqual(new Date(Date.UTC(2013, 1, 2, 12, 0, 0)));
         });
 
+        it('users should be set according to config file if present, otherwise it should be null', function () {
+            var config = {
+                date_from: '2013-10-10',
+                date_until: '2013-10-14',
+                trackers: "tracker01,tracker02",
+                planned_date_fields: "field01,field02"
+            };
+            $scope.init(config);
+            expect($scope.all_users).toBeTruthy();
+            expect($scope.users.all).toEqual([]);
+            expect($scope.users.selected).toEqual([]);
+
+            var config = {
+                date_from: '2013-10-10',
+                date_until: '2013-10-14',
+                trackers: "tracker01,tracker02",
+                planned_date_fields: "field01,field02",
+                users: "abc,efg,hij"
+            };
+            $scope.init(config);
+            expect($scope.all_users).toBeFalsy();
+            expect($scope.users.selected).toEqual(['abc','efg','hij']);
+        });
+
+        it('users should be be overwritten by the get parameters', function () {
+            var config = {
+                date_from: '2013-10-10',
+                date_until: '2013-10-14',
+                trackers: "tracker01,tracker02",
+                planned_date_fields: "field01,field02",
+                users: "abc,efg,hij"
+            };
+
+            spyOn($location, 'search').and.returnValue({users: "uvw,xyz"});
+            $scope.init(config);
+            expect($scope.all_users).toBeFalsy();
+            expect($scope.users.selected).toEqual(['uvw','xyz']);
+        });
+
     });
 
     describe('drawGraph:', function () {
@@ -79,18 +118,104 @@ describe('epuCtrl:', function () {
             };
         });
 
-        it('A simple request should set the accumulated quantities for the union set of all users', function () {
+        it('A simple request should set the accumulated quantities for the union set of all users and all users should be marked in the users array', function () {
+
+            $scope.init(config);
+            $httpBackend.flush();
+
+            // Check users string and users_array
+            expect($scope.all_users).toBeTruthy();
+            expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['abc','efg','hij','uvw','xyz']);
+
+            expect($scope.error_message).toEqual('');
+            expect($scope.labels).toEqual(['abc','efg','hij','uvw','xyz']);
+            // Test Actual Effort
+            expect($scope.data[0]).toEqual([28,23,42,75,43]);
+            // Test Remaining Effor
+            expect($scope.data[1]).toEqual([61,3,33,116,43]);
+
+        });
+
+        it('A request which informs the users as well, should filter only by these users but list all users in the users_array', function () {
+            config['users'] = 'efg,uvw';
 
             $scope.init(config);
             $httpBackend.flush();
 
             expect($scope.error_message).toEqual('');
-            expect($scope.labels).toEqual(['abc','efg','hij','uvw','xyz'])
-            // Test Actual Effort
-            expect($scope.data[0]).toEqual([28,23,42,75,43])
-            // Test Remaining Effor
-            expect($scope.data[1]).toEqual([61,3,33,116,43])
 
+            // Check users string and users array Configuration
+            expect($scope.all_users).toBeFalsy();
+            expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['efg','uvw']);
+
+            expect($scope.labels).toEqual(['efg','uvw']);
+            // Test Actual Effort
+            expect($scope.data[0]).toEqual([23,75]);
+            // Test Remaining Effort
+            expect($scope.data[1]).toEqual([3,116])
+        });
+
+        it('A second request with an other user set should enhance the users_array, sort the array, do not remove any existing users and let the selections as defined (if ALL:0)', function () {
+            config['users'] = 'efg,uvw';
+
+            $scope.init(config);
+            $httpBackend.flush();
+
+            expect($scope.error_message).toEqual('');
+
+            // Check users string and users array Configuration
+            expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['efg','uvw']);
+
+            // Set return values for second request
+            $httpBackend.expectGET("http://test:8080/test/tracker01/_aggrs/latest_import_timestamp").respond(200, '{ "_size" : 1 , "_total_pages" : 1 , "_returned" : 1 , "_embedded" : { "rh:result" :[{"_id": {"$oid": "580e9c998e138aff5c812220"},"importTimestamp": "2011-12-13T01:02:03"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker02/_aggrs/latest_import_timestamp").respond(200, '{ "_size" : 1 , "_total_pages" : 1 , "_returned" : 1 , "_embedded" : { "rh:result" :[{"_id": {"$oid": "580e9c998e138aff5c812220"},"importTimestamp": "2012-13-14T02:03:04"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker01/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'2011-12-13T01:02:03','planned_date_field':'$field01','datetime_from':'2013-10-10T00:00:00','datetime_until':'2013-10-14T23:59:59'}").respond(200, '{ "_size" : 4 , "_total_pages" : 1 , "_returned" : 4 , "_embedded" : { "rh:result" :[{ "_id": "klm","estimatedEffort": 12,"actualEffort": 5,"remainingEffort": 9,"assignedTo": "klm"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker02/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'2012-13-14T02:03:04','planned_date_field':'$field02','datetime_from':'2013-10-10T00:00:00','datetime_until':'2013-10-14T23:59:59'}").respond(200, '{ "_size" : 3 , "_total_pages" : 1 , "_returned" : 3 , "_embedded" : { "rh:result" :[{ "_id": "opq","estimatedEffort": 34,"actualEffort": 23,"remainingEffort": 52,"assignedTo": "opq"}]}}');
+
+            $scope.getDataAndDraw();
+            $httpBackend.flush();
+
+            expect($scope.error_message).toEqual('');
+
+            // Check users string and users array Configuration
+            expect($scope.users.all).toEqual(['abc','efg','hij','klm','opq','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['efg','uvw']);
+        });
+
+        it('A second request with an other user set should enhance the users_array, sort the array, do not remove any existing users and mark everything as selected (if ALL:1)', function () {
+            config['users'] = 'efg,uvw';
+
+            $scope.init(config);
+            $httpBackend.flush();
+
+            expect($scope.error_message).toEqual('');
+
+            // Check users string and users array Configuration
+            expect($scope.all_users).toBeFalsy();
+            expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['efg','uvw']);
+
+
+            // Set return values for second request
+            $httpBackend.expectGET("http://test:8080/test/tracker01/_aggrs/latest_import_timestamp").respond(200, '{ "_size" : 1 , "_total_pages" : 1 , "_returned" : 1 , "_embedded" : { "rh:result" :[{"_id": {"$oid": "580e9c998e138aff5c812220"},"importTimestamp": "2011-12-13T01:02:03"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker02/_aggrs/latest_import_timestamp").respond(200, '{ "_size" : 1 , "_total_pages" : 1 , "_returned" : 1 , "_embedded" : { "rh:result" :[{"_id": {"$oid": "580e9c998e138aff5c812220"},"importTimestamp": "2012-13-14T02:03:04"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker01/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'2011-12-13T01:02:03','planned_date_field':'$field01','datetime_from':'2013-10-10T00:00:00','datetime_until':'2013-10-14T23:59:59'}").respond(200, '{ "_size" : 4 , "_total_pages" : 1 , "_returned" : 4 , "_embedded" : { "rh:result" :[{ "_id": "klm","estimatedEffort": 12,"actualEffort": 5,"remainingEffort": 9,"assignedTo": "klm"}]}}');
+            $httpBackend.expectGET("http://test:8080/test/tracker02/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'2012-13-14T02:03:04','planned_date_field':'$field02','datetime_from':'2013-10-10T00:00:00','datetime_until':'2013-10-14T23:59:59'}").respond(200, '{ "_size" : 3 , "_total_pages" : 1 , "_returned" : 3 , "_embedded" : { "rh:result" :[{ "_id": "opq","estimatedEffort": 34,"actualEffort": 23,"remainingEffort": 52,"assignedTo": "opq"}]}}');
+
+            // Set all_users = true and fetch new data
+            $scope.all_users = true;
+            $scope.getDataAndDraw();
+            $httpBackend.flush();
+
+            expect($scope.error_message).toEqual('');
+
+            // Check users and users array Configuration
+            expect($scope.all_users).toBeTruthy();
+            expect($scope.users.all).toEqual(['abc','efg','hij','klm','opq','uvw','xyz']);
+            expect($scope.users.selected).toEqual(['abc','efg','hij','klm','opq','uvw','xyz']);
         });
     });
 

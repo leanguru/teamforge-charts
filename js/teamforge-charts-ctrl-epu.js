@@ -5,6 +5,8 @@
 app.controller('epuCtrl', function ($scope, $http, parameter) {
 
     $scope.error_message = '';
+    $scope.users = {all: [], selected: []};
+    $scope.flags = {all_users: true};
 
     // Set chart options
     $scope.options = {
@@ -22,7 +24,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             ],
             yAxes: [
                 {
-                    stacked: true,
+                    stacked: true
                 }
             ]
         }
@@ -43,7 +45,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             borderColor: color,
             backgroundColor: color,
             pointBorderColor: color,
-            pointBackgroundColor: color,
+            pointBackgroundColor: color
         }
     });
 
@@ -67,6 +69,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         config.plain_view = parameter.get('plain_view', config.plain_view);
         config.trackers = parameter.get('trackers', config.trackers);
         config.planned_date_fields = parameter.get('planned_date_fields', config.planned_date_fields);
+        config.users = parameter.get('users', config.users);
 
         // set trackers
         $scope.trackers = config.trackers;
@@ -83,6 +86,16 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.date = {};
         $scope.date.from = new Date(config.date_from + "T12:00:00");
         $scope.date.until = new Date(config.date_until + "T12:00:00");
+
+        // set users
+        if (typeof config.users != 'undefined') {
+            $scope.flags.all_users = false;
+            $scope.users.selected = config.users.split(",");
+        } else {
+            $scope.flags.all_users = true;
+            $scope.users.selected = [];
+        }
+
 
         // Check if date.from <= date.until
         if ($scope.date.from > $scope.date.until) {
@@ -140,17 +153,29 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         for (var i in efforts_per_user) {
             for (var j in efforts_per_user[i]) {
                 var user = efforts_per_user[i][j].assignedTo;
-                if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
-                aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
 
-                if (typeof aggregated_actual_efforts_per_user[user] == "undefined") aggregated_actual_efforts_per_user[user] = 0;
-                aggregated_actual_efforts_per_user[user] = aggregated_actual_efforts_per_user[user] + efforts_per_user[i][j].actualEffort;
+                // If user is not part of users.all then include it
+                if ( $scope.users.all.indexOf(user) < 0 ) $scope.users.all.push(user);
 
-                if (typeof aggregated_remaining_efforts_per_user[user] == "undefined") aggregated_remaining_efforts_per_user[user] = 0;
-                aggregated_remaining_efforts_per_user[user] = aggregated_remaining_efforts_per_user[user] + efforts_per_user[i][j].remainingEffort;
+                // If user has been selected (Or ALL:1) then add values to ..._efforts_per_user
+                if ($scope.flags.all_users || $scope.users.selected.indexOf(user) >= 0 ) {
+                    if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
+                    aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
+
+                    if (typeof aggregated_actual_efforts_per_user[user] == "undefined") aggregated_actual_efforts_per_user[user] = 0;
+                    aggregated_actual_efforts_per_user[user] = aggregated_actual_efforts_per_user[user] + efforts_per_user[i][j].actualEffort;
+
+                    if (typeof aggregated_remaining_efforts_per_user[user] == "undefined") aggregated_remaining_efforts_per_user[user] = 0;
+                    aggregated_remaining_efforts_per_user[user] = aggregated_remaining_efforts_per_user[user] + efforts_per_user[i][j].remainingEffort;
+                }
             }
         }
 
+        // Sort users.all
+        $scope.users.all.sort()
+
+        // Set all users as selected
+        if ( $scope.flags.all_users) $scope.users.selected = angular.copy($scope.users.all);
 
         // Reset all data
         $scope.labels = [];
@@ -158,7 +183,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.data = [];
         $scope.datasetOverride = [];
 
-        $scope.labels = Object.keys(aggregated_estimated_efforts_per_user).sort();
+        $scope.labels = angular.copy($scope.users.selected);
 
 
         var flatten_array = function (array, labels) {
@@ -185,4 +210,21 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             document.getElementById('js-legend').innerHTML = chart.generateLegend();
     });
 
+    $scope.all_users_flag_change = function () {
+        if ( $scope.flags.all_users ) {
+            $scope.users.selected = angular.copy($scope.users.all);
+        } else {
+            $scope.users.selected = [];
+        }
+    }
+
+    $scope.users_flag_change = function (checklist_value) {
+        // For the second condition you have to subtract 1,
+        // because $scope.users.selected will be updated only after that routine
+        if (checklist_value == false) {
+            $scope.flags.all_users = false;
+        } else if ( $scope.users.all.length-1 >= $scope.users.selected.length ) {
+            $scope.flags.all_users = true;
+        }
+    }
 });
