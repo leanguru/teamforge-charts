@@ -2,9 +2,12 @@
  The CFD Controller for cumulative flow diagrams
  ---------------------------------------------------------------------------------------------------------------------*/
 
-app.controller('epuCtrl', function ($scope, $http, parameter) {
+app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
 
     $scope.error_message = '';
+    $scope.users = {all: [], selected: []};
+    $scope.flags = {all_users: true, plain_view: false};
+    $scope.meta_data = {import_timestamps: {}, direct_link: $location.absUrl() };
 
     // Set chart options
     $scope.options = {
@@ -22,7 +25,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             ],
             yAxes: [
                 {
-                    stacked: true,
+                    stacked: true
                 }
             ]
         }
@@ -43,7 +46,7 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             borderColor: color,
             backgroundColor: color,
             pointBorderColor: color,
-            pointBackgroundColor: color,
+            pointBackgroundColor: color
         }
     });
 
@@ -54,21 +57,20 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
     };
 
     // Init function - to be loaded when graph is being generated
-    $scope.init = function () {
+    $scope.init = function (config) {
         // Set loading flags
         $scope.loading_canvas = true;
 
         // Set config
-        var config = angular.copy(epu_config_default);
+        if (typeof config == "undefined") config = angular.copy(epu_config_default);
 
         // Overwrite config with get parameters
         config.date_from = parameter.get('date_from', config.date_from);
         config.date_until = parameter.get('date_until', config.date_until);
         config.plain_view = parameter.get('plain_view', config.plain_view);
-        config.trackers = parameter.get('trackers', config.trackers)
+        config.trackers = parameter.get('trackers', config.trackers);
         config.planned_date_fields = parameter.get('planned_date_fields', config.planned_date_fields);
-
-
+        config.users = parameter.get('users', config.users);
 
         // set trackers
         $scope.trackers = config.trackers;
@@ -79,12 +81,24 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.planned_date_fields_array = config.planned_date_fields.split(",");
 
         // set plain view
-        $scope.plain_view = config.plain_view == "true" || config.plain_view == 1;
+        $scope.flags.plain_view = config.plain_view == "true" || config.plain_view == 1;
 
         // Set dates
         $scope.date = {};
         $scope.date.from = new Date(config.date_from + "T12:00:00");
         $scope.date.until = new Date(config.date_until + "T12:00:00");
+
+        // set users
+        if (typeof config.users != 'undefined') {
+            $scope.flags.all_users = false;
+            $scope.users.selected = config.users.split(",");
+            $scope.users.all = config.users.split(",");
+        } else {
+            $scope.flags.all_users = true;
+            $scope.users.selected = [];
+            $scope.users.all = [];
+        }
+
 
         // Check if date.from <= date.until
         if ($scope.date.from > $scope.date.until) {
@@ -98,16 +112,28 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         // Set spinner
         $scope.loading_canvas = true;
 
+        // Set direct link
+        $scope.meta_data.direct_link = $location.absUrl().split('?')[0]
+            +"?trackers="+$scope.trackers
+            +"&planned_date_fields="+$scope.planned_date_fields
+            +"&date_from="+$scope.date.from.toISOString().substr(0, 10)
+            +"&date_until="+$scope.date.until.toISOString().substr(0, 10);
+
+        if (! $scope.flags.all_users) $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&users="+$scope.users.selected.join(",");
+
+        $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&plain_view=1";
+
         // Set array of errors_per_user and then to fetch the errors per user (not very elegantly yet)
         var efforts_per_user = [];
 
         // Set function to get last timestamp and then to
         var fetch_efforts_per_user = function (tracker, planned_date_field) {
-            return $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
+            $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
                 function (response) {
                     var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
+                    $scope.meta_data.import_timestamps[tracker] = new Date(import_timestamp);
 
-                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field': '$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
+                    $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field':'$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
                             efforts_per_user.push(response.data._embedded["rh:result"]);
                             $scope.drawGraph(efforts_per_user);
@@ -142,16 +168,30 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         for (var i in efforts_per_user) {
             for (var j in efforts_per_user[i]) {
                 var user = efforts_per_user[i][j].assignedTo;
-                if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
-                aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
 
-                if (typeof aggregated_actual_efforts_per_user[user] == "undefined") aggregated_actual_efforts_per_user[user] = 0;
-                aggregated_actual_efforts_per_user[user] = aggregated_actual_efforts_per_user[user] + efforts_per_user[i][j].actualEffort;
+                // If user is not part of users.all then include it
+                if ( $scope.users.all.indexOf(user) < 0 ) $scope.users.all.push(user);
 
-                if (typeof aggregated_remaining_efforts_per_user[user] == "undefined") aggregated_remaining_efforts_per_user[user] = 0;
-                aggregated_remaining_efforts_per_user[user] = aggregated_remaining_efforts_per_user[user] + efforts_per_user[i][j].remainingEffort;
+                // If user has been selected (Or ALL:1) then add values to ..._efforts_per_user
+                if ($scope.flags.all_users || $scope.users.selected.indexOf(user) >= 0 ) {
+                    if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
+                    aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
+
+                    if (typeof aggregated_actual_efforts_per_user[user] == "undefined") aggregated_actual_efforts_per_user[user] = 0;
+                    aggregated_actual_efforts_per_user[user] = aggregated_actual_efforts_per_user[user] + efforts_per_user[i][j].actualEffort;
+
+                    if (typeof aggregated_remaining_efforts_per_user[user] == "undefined") aggregated_remaining_efforts_per_user[user] = 0;
+                    aggregated_remaining_efforts_per_user[user] = aggregated_remaining_efforts_per_user[user] + efforts_per_user[i][j].remainingEffort;
+                }
             }
         }
+
+        // Set all users as selected
+        if ( $scope.flags.all_users) $scope.users.selected = angular.copy($scope.users.all);
+
+        // Sort users.all and  users.selected
+        $scope.users.all.sort()
+        $scope.users.selected.sort()
 
 
         // Reset all data
@@ -160,31 +200,49 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
         $scope.data = [];
         $scope.datasetOverride = [];
 
-        $scope.labels = Object.keys(aggregated_estimated_efforts_per_user).sort();
+        $scope.labels = angular.copy($scope.users.selected);
 
 
         var flatten_array = function (array, labels) {
             var flat_array = []
             for (var i in labels) {
-                flat_array.push(array[labels[i]]);
+                flat_array.push(array[labels[i]] || 0);
             }
             return flat_array
         }
+        $scope.series.push("Remaining Effort");
+        $scope.data.push(flatten_array(aggregated_remaining_efforts_per_user, $scope.labels));
+
         $scope.series.push("Actual Effort");
         $scope.data.push(flatten_array(aggregated_actual_efforts_per_user, $scope.labels));
 
-        $scope.series.push("Remaining Effort");
-        $scope.data.push(flatten_array(aggregated_remaining_efforts_per_user, $scope.labels));
 
         // Disable spinner
         $scope.loading_canvas = false;
     }
 
     $scope.$on('chart-create', function (event, chart) {
-        if ($scope.plain_view)
+        if ($scope.flags.plain_view)
             document.getElementById('js-legend-plain').innerHTML = chart.generateLegend();
         else
             document.getElementById('js-legend').innerHTML = chart.generateLegend();
     });
 
+    $scope.all_users_flag_change = function () {
+        if ( $scope.flags.all_users ) {
+            $scope.users.selected = angular.copy($scope.users.all);
+        } else {
+            $scope.users.selected = [];
+        }
+    }
+
+    $scope.users_flag_change = function (checklist_value) {
+        // For the second condition you have to subtract 1,
+        // because $scope.users.selected will be updated only after that routine
+        if (checklist_value == false) {
+            $scope.flags.all_users = false;
+        } else if ( $scope.users.selected.length >= $scope.users.all.length-1) {
+            $scope.flags.all_users = true;
+        }
+    }
 });

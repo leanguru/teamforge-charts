@@ -24,6 +24,7 @@
     <script src="js/angular.min.js"></script>
     <script src="js/angular-sanitize.js"></script>
     <script src="js/angular-chart.js"></script>
+    <script src="js/angular-checklist-model.js"></script>
     <script src="js/select.js"></script>
     <script src="js/teamforge-charts-app.js"></script>
     <script src="js/teamforge-charts-ctrl-epu.js"></script>
@@ -44,7 +45,7 @@
 </head>
 <body ng-app="teamforgeChartsApp" ng-controller="epuCtrl" ng-init="init()">
 
-<div class="container" ng-if="!plain_view">
+<div class="container">
     <div class="page-header">
         <div class="row">
             <div class="col-xs-12">
@@ -61,19 +62,28 @@
             </div>
         </div>
     </div>
-    <div class="row" ng-show="! error_message">
+    <div class="row" ng-show="! error_message" ng-if="!flags.plain_view">
         <div class="col-sm-1">
         </div>
         <div class="col-sm-10 col-xs-12">
             <div class="panel panel-default">
                 <div class="panel-heading">
                     <div class="row">
-                        <div class="col-sm-8 col-xs-12">
-                            <input type="date" ng-model="date.from" max="{{date.until | date: 'yyyy-MM-dd'}}"> to <input type="date"
-                                                                               ng-model="date.until" min="{{date.from | date: 'yyyy-MM-dd'}}">
+                        <div class="col-xs-12">
+                            Date from <input type="date" ng-model="date.from" max="{{date.until | date: 'yyyy-MM-dd'}}">
+                            to <input type="date"
+                                      ng-model="date.until" min="{{date.from | date: 'yyyy-MM-dd'}}">
+                            <button class="btn btn-primary pull-right" ng-click="getDataAndDraw()">Redraw Graph</button>
                         </div>
-                        <div class="col-sm-4 col-xs-12">
-                            <button class="btn btn-primary" ng-click="getDataAndDraw()">Redraw Graph</button>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-2 col-xs-6">
+                            <input type="checkbox" ng-model="flags.all_users" ng-change="all_users_flag_change()"> All
+                            Users
+                        </div>
+                        <div class="col-sm-2 col-xs-6" ng-repeat="user in users.all">
+                            <input type="checkbox" checklist-model="users.selected" checklist-value="user"
+                                   ng-model="checklist_value" ng-change="users_flag_change(checklist_value)"> {{user}}
                         </div>
                     </div>
                 </div>
@@ -97,19 +107,7 @@
         <div class="col-sm-1">
         </div>
     </div>
-</div>
-
-<div class="container" ng-if="plain_view">
-    <div class="page-header">
-        <div class="row">
-            <div class="col-xs-12">
-                <h1>Effort Per User
-                    <small>({{ trackers }})</small>
-                </h1>
-            </div>
-        </div>
-    </div>
-    <div class="row">
+    <div class="row" ng-show="! error_message" ng-if="flags.plain_view">
         <div class="col-xs-12">
             <div class="jumbotron" id="spinner-plain" style="height: 400px" ng-show="loading_canvas">
             </div>
@@ -124,10 +122,17 @@
                     <div id="js-legend-plain" class="chart-legend"></div>
                 </div>
             </div>
-
         </div>
     </div>
-</div>
+    <div class="row well">
+        <div class="col-xs-12">
+            <b>Import Timestamps:</b><span ng-repeat="(key, value) in meta_data.import_timestamps"> {{key}} : {{value| date:'dd/MM/yyyy hh:mm:ss'}}{{$last ? '' : ', '}}</span>
+        </div>
+        <div class="col-xs-12" ng-if="!flags.plain_view">
+            <b>Direct Link:</b> {{ meta_data.direct_link}}
+        </div>
+    </div>
+
 
 </body>
 </html>

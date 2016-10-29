@@ -13,6 +13,7 @@ module.exports = function(karma){
       "./select.js",
       "teamforge-charts-app.js",
       "teamforge-charts-ctrl-cfd.js",
+      "teamforge-charts-ctrl-epu.js",
       "./tests/*-test.js"
     ],
  
