@@ -92,9 +92,11 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
         if (typeof config.users != 'undefined') {
             $scope.flags.all_users = false;
             $scope.users.selected = config.users.split(",");
+            $scope.users.all = config.users.split(",");
         } else {
             $scope.flags.all_users = true;
             $scope.users.selected = [];
+            $scope.users.all = [];
         }
 
 
@@ -184,11 +186,13 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
             }
         }
 
-        // Sort users.all
-        $scope.users.all.sort()
-
         // Set all users as selected
         if ( $scope.flags.all_users) $scope.users.selected = angular.copy($scope.users.all);
+
+        // Sort users.all and  users.selected
+        $scope.users.all.sort()
+        $scope.users.selected.sort()
+
 
         // Reset all data
         $scope.labels = [];
@@ -202,7 +206,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
         var flatten_array = function (array, labels) {
             var flat_array = []
             for (var i in labels) {
-                flat_array.push(array[labels[i]]);
+                flat_array.push(array[labels[i]] || 0);
             }
             return flat_array
         }

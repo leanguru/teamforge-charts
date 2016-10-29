@@ -66,7 +66,7 @@ describe('epuCtrl:', function () {
                 planned_date_fields: "field01,field02"
             };
             $scope.init(config);
-            expect($scope.all_users).toBeTruthy();
+            expect($scope.flags.all_users).toBeTruthy();
             expect($scope.users.all).toEqual([]);
             expect($scope.users.selected).toEqual([]);
 
@@ -78,7 +78,7 @@ describe('epuCtrl:', function () {
                 users: "abc,efg,hij"
             };
             $scope.init(config);
-            expect($scope.all_users).toBeFalsy();
+            expect($scope.flags.all_users).toBeFalsy();
             expect($scope.users.selected).toEqual(['abc','efg','hij']);
         });
 
@@ -93,7 +93,7 @@ describe('epuCtrl:', function () {
 
             spyOn($location, 'search').and.returnValue({users: "uvw,xyz"});
             $scope.init(config);
-            expect($scope.all_users).toBeFalsy();
+            expect($scope.flags.all_users).toBeFalsy();
             expect($scope.users.selected).toEqual(['uvw','xyz']);
         });
 
@@ -124,16 +124,16 @@ describe('epuCtrl:', function () {
             $httpBackend.flush();
 
             // Check users string and users_array
-            expect($scope.all_users).toBeTruthy();
+            expect($scope.flags.all_users).toBeTruthy();
             expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
             expect($scope.users.selected).toEqual(['abc','efg','hij','uvw','xyz']);
 
             expect($scope.error_message).toEqual('');
             expect($scope.labels).toEqual(['abc','efg','hij','uvw','xyz']);
+            // Test Remaining Effort
+            expect($scope.data[0]).toEqual([61,3,33,116,43]);
             // Test Actual Effort
-            expect($scope.data[0]).toEqual([28,23,42,75,43]);
-            // Test Remaining Effor
-            expect($scope.data[1]).toEqual([61,3,33,116,43]);
+            expect($scope.data[1]).toEqual([28,23,42,75,43]);
 
         });
 
@@ -146,15 +146,35 @@ describe('epuCtrl:', function () {
             expect($scope.error_message).toEqual('');
 
             // Check users string and users array Configuration
-            expect($scope.all_users).toBeFalsy();
+            expect($scope.flags.all_users).toBeFalsy();
             expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
             expect($scope.users.selected).toEqual(['efg','uvw']);
 
             expect($scope.labels).toEqual(['efg','uvw']);
-            // Test Actual Effort
-            expect($scope.data[0]).toEqual([23,75]);
             // Test Remaining Effort
-            expect($scope.data[1]).toEqual([3,116])
+            expect($scope.data[0]).toEqual([3,116])
+            // Test Actual Effort
+            expect($scope.data[1]).toEqual([23,75]);
+        });
+
+        it('A request which informs the users as well should include users in users.all, show all listed users as labels and display 0 values where no information is available', function () {
+            config['users'] = 'efg,uvw,bla,muh,zyx';
+
+            $scope.init(config);
+            $httpBackend.flush();
+
+            expect($scope.error_message).toEqual('');
+
+            // Check users string and users array Configuration
+            expect($scope.flags.all_users).toBeFalsy();
+            expect($scope.users.all).toEqual(['abc','bla','efg','hij','muh','uvw','xyz','zyx']);
+            expect($scope.users.selected).toEqual(['bla','efg','muh','uvw','zyx']);
+
+            expect($scope.labels).toEqual(['bla','efg','muh','uvw','zyx']);
+            // Test Remaining Effort
+            expect($scope.data[0]).toEqual([0,3,0,116,0])
+            // Test Actual Effort
+            expect($scope.data[1]).toEqual([0,23,0,75,0]);
         });
 
         it('A second request with an other user set should enhance the users_array, sort the array, do not remove any existing users and let the selections as defined (if ALL:0)', function () {
@@ -194,7 +214,7 @@ describe('epuCtrl:', function () {
             expect($scope.error_message).toEqual('');
 
             // Check users string and users array Configuration
-            expect($scope.all_users).toBeFalsy();
+            expect($scope.flags.all_users).toBeFalsy();
             expect($scope.users.all).toEqual(['abc','efg','hij','uvw','xyz']);
             expect($scope.users.selected).toEqual(['efg','uvw']);
 
@@ -206,14 +226,14 @@ describe('epuCtrl:', function () {
             $httpBackend.expectGET("http://test:8080/test/tracker02/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'2012-13-14T02:03:04','planned_date_field':'$field02','datetime_from':'2013-10-10T00:00:00','datetime_until':'2013-10-14T23:59:59'}").respond(200, '{ "_size" : 3 , "_total_pages" : 1 , "_returned" : 3 , "_embedded" : { "rh:result" :[{ "_id": "opq","estimatedEffort": 34,"actualEffort": 23,"remainingEffort": 52,"assignedTo": "opq"}]}}');
 
             // Set all_users = true and fetch new data
-            $scope.all_users = true;
+            $scope.flags.all_users = true;
             $scope.getDataAndDraw();
             $httpBackend.flush();
 
             expect($scope.error_message).toEqual('');
 
             // Check users and users array Configuration
-            expect($scope.all_users).toBeTruthy();
+            expect($scope.flags.all_users).toBeTruthy();
             expect($scope.users.all).toEqual(['abc','efg','hij','klm','opq','uvw','xyz']);
             expect($scope.users.selected).toEqual(['abc','efg','hij','klm','opq','uvw','xyz']);
         });
