@@ -193,11 +193,12 @@ app.controller('epuCtrl', function ($scope, $http, parameter) {
             }
             return flat_array
         }
+        $scope.series.push("Remaining Effort");
+        $scope.data.push(flatten_array(aggregated_remaining_efforts_per_user, $scope.labels));
+
         $scope.series.push("Actual Effort");
         $scope.data.push(flatten_array(aggregated_actual_efforts_per_user, $scope.labels));
 
-        $scope.series.push("Remaining Effort");
-        $scope.data.push(flatten_array(aggregated_remaining_efforts_per_user, $scope.labels));
 
         // Disable spinner
         $scope.loading_canvas = false;
