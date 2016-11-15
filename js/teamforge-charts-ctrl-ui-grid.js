@@ -39,7 +39,7 @@ app.controller('uiGridCtrl', function ($scope, $http, uiGridConstants) {
 
                 loading_array[tracker] = false;
                 if (Object.keys(loading_array).every(function (v) { return !loading_array[v] })) {
-                    $scope.loading = false;
+                    $scope.loading_grid = false;
                 }
             },
             setUrlError);
@@ -67,11 +67,11 @@ app.controller('uiGridCtrl', function ($scope, $http, uiGridConstants) {
 
      } */
 
-    $scope.loading = false;
+    $scope.loading_grid = false;
     $scope.$on('update-table', function (call, parameters) {
 
-        if ($scope.loading == true) return;
-        $scope.loading = true;
+        if ($scope.loading_grid == true) return;
+        $scope.loading_grid = true;
 
         console.log(parameters);
         $scope.myData = [];
