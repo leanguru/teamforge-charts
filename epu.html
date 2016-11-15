@@ -114,7 +114,9 @@
                     <div class="row" ng-show="! error_message">
                         <div class="col-xs-12">
                             <div ng-controller="uiGridCtrl">
-                                <div id="grid1" ui-grid="{ data: myData, columnDefs: columnDefs, enableFiltering: true, showColumnFooter: true }" class="grid" ui-grid-resize-columns></div>
+                                <div id="grid1"
+                                     ui-grid="{ data: myData, columnDefs: columnDefs, enableFiltering: true, showColumnFooter: true }"
+                                     class="grid" ui-grid-resize-columns></div>
                             </div>
                         </div>
                     </div>
@@ -137,6 +139,21 @@
                 </div>
                 <div class="col-sm-3">
                     <div id="js-legend-plain" class="chart-legend"></div>
+                </div>
+            </div>
+            <hr>
+            <div class="row" ng-show="! error_message">
+                <div class="col-xs-12">
+                    <h3>Drill Down</h3>
+                </div>
+            </div>
+            <div class="row" ng-show="! error_message">
+                <div class="col-xs-12">
+                    <div ng-controller="uiGridCtrl">
+                        <div id="grid1"
+                             ui-grid="{ data: myData, columnDefs: columnDefs, enableFiltering: true, showColumnFooter: true }"
+                             class="grid" ui-grid-resize-columns></div>
+                    </div>
                 </div>
             </div>
         </div>
