@@ -1,7 +1,7 @@
 var restheart_config = {
     base_url: "http://<HOST>:<PORT>/<MONGO_DB>/",
     username: "<USERNAME>",
-    password: "<USERNAME"
+    password: "<PASSWORD>"
 }
 
 var epu_config_default = {
