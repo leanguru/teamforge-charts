@@ -2,7 +2,7 @@
  The Angular Application
  ---------------------------------------------------------------------------------------------------------------------*/
 
-var app = angular.module('teamforgeChartsApp', ['ui.select', 'ngSanitize', 'chart.js','checklist-model']);
+var app = angular.module('teamforgeChartsApp', ['ui.select', 'ngSanitize', 'chart.js','checklist-model','ui.grid','ui.grid.resizeColumns']);
 
 // Configure location provider in order to allow to manipulate get parameter
 app.config(function ($locationProvider) {

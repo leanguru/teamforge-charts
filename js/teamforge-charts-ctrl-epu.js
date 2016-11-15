@@ -11,12 +11,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
 
     // Set chart options
     $scope.options = {
-        tooltips: {
-            mode: "single"
-        },
-        hover: {
-            mode: "single"
-        },
+        events: ["click"],
         scales: {
             xAxes: [
                 {
@@ -28,6 +23,41 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
                     stacked: true
                 }
             ]
+        },
+        tooltips: {
+            callbacks: {
+                afterBody: function (data) {
+                    var ui_grid_parameters = {};
+
+                    var trackers = $scope.trackers.split(",");
+                    var planned_date_fields = $scope.planned_date_fields.split(",");
+                    for (var i in trackers) {
+                        var tracker = trackers[i];
+                        ui_grid_parameters[tracker] = { };
+
+                        ui_grid_parameters[tracker].query = { };
+                        ui_grid_parameters[tracker].query.importTimestamp = $scope.timestamps[tracker];
+                        ui_grid_parameters[tracker].query[planned_date_fields[i]] = {
+                            $gte: $scope.date.from.toISOString().substr(0, 10) + "T00:00:00",
+                            $lte: $scope.date.until.toISOString().substr(0, 10) + "24:00:00"
+                        };
+                        ui_grid_parameters[tracker].query.assignedTo = data[0].xLabel;
+
+                        ui_grid_parameters[tracker].field_mappings = {}
+                        ui_grid_parameters[tracker].field_mappings[planned_date_fields[i]] = "date";
+
+                        ui_grid_parameters[tracker].preset_columns = {
+                            tracker: tracker
+                        };
+
+                        ui_grid_parameters[tracker].display_columns = [
+                            'tracker','id','assignedTo','title','estimatedEffort','actualEffort','remainingEffort'
+                        ];
+                    }
+
+                    $scope.$broadcast('update-table', ui_grid_parameters);
+                }
+            }
         }
     };
 
@@ -114,12 +144,12 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
 
         // Set direct link
         $scope.meta_data.direct_link = $location.absUrl().split('?')[0]
-            +"?trackers="+$scope.trackers
-            +"&planned_date_fields="+$scope.planned_date_fields
-            +"&date_from="+$scope.date.from.toISOString().substr(0, 10)
-            +"&date_until="+$scope.date.until.toISOString().substr(0, 10);
+            + "?trackers=" + $scope.trackers
+            + "&planned_date_fields=" + $scope.planned_date_fields
+            + "&date_from=" + $scope.date.from.toISOString().substr(0, 10)
+            + "&date_until=" + $scope.date.until.toISOString().substr(0, 10);
 
-        if (! $scope.flags.all_users) $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&users="+$scope.users.selected.join(",");
+        if (!$scope.flags.all_users) $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&users=" + $scope.users.selected.join(",");
 
         $scope.meta_data.direct_link = $scope.meta_data.direct_link + "&plain_view=1";
 
@@ -127,11 +157,13 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
         var efforts_per_user = [];
 
         // Set function to get last timestamp and then to
+        $scope.timestamps = {};
         var fetch_efforts_per_user = function (tracker, planned_date_field) {
             $http.get(restheart_config.base_url + tracker + "/_aggrs/latest_import_timestamp").then(
                 function (response) {
                     var import_timestamp = response.data._embedded["rh:result"][0].importTimestamp;
                     $scope.meta_data.import_timestamps[tracker] = new Date(import_timestamp);
+                    $scope.timestamps[tracker] = import_timestamp;
 
                     $http.get(restheart_config.base_url + tracker + "/_aggrs/current_effort_per_user?pagesize=1000&avars={'import_timestamp':'" + import_timestamp + "','planned_date_field':'$" + planned_date_field + "','datetime_from':'" + $scope.date.from.toISOString().substr(0, 10) + "T00:00:00','datetime_until':'" + $scope.date.until.toISOString().substr(0, 10) + "T23:59:59'}").then(
                         function (response) {
@@ -170,10 +202,10 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
                 var user = efforts_per_user[i][j].assignedTo;
 
                 // If user is not part of users.all then include it
-                if ( $scope.users.all.indexOf(user) < 0 ) $scope.users.all.push(user);
+                if ($scope.users.all.indexOf(user) < 0) $scope.users.all.push(user);
 
                 // If user has been selected (Or ALL:1) then add values to ..._efforts_per_user
-                if ($scope.flags.all_users || $scope.users.selected.indexOf(user) >= 0 ) {
+                if ($scope.flags.all_users || $scope.users.selected.indexOf(user) >= 0) {
                     if (typeof aggregated_estimated_efforts_per_user[user] == "undefined") aggregated_estimated_efforts_per_user[user] = 0;
                     aggregated_estimated_efforts_per_user[user] = aggregated_estimated_efforts_per_user[user] + efforts_per_user[i][j].estimatedEffort;
 
@@ -187,7 +219,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
         }
 
         // Set all users as selected
-        if ( $scope.flags.all_users) $scope.users.selected = angular.copy($scope.users.all);
+        if ($scope.flags.all_users) $scope.users.selected = angular.copy($scope.users.all);
 
         // Sort users.all and  users.selected
         $scope.users.all.sort()
@@ -229,7 +261,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
     });
 
     $scope.all_users_flag_change = function () {
-        if ( $scope.flags.all_users ) {
+        if ($scope.flags.all_users) {
             $scope.users.selected = angular.copy($scope.users.all);
         } else {
             $scope.users.selected = [];
@@ -241,7 +273,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
         // because $scope.users.selected will be updated only after that routine
         if (checklist_value == false) {
             $scope.flags.all_users = false;
-        } else if ( $scope.users.selected.length >= $scope.users.all.length-1) {
+        } else if ($scope.users.selected.length >= $scope.users.all.length - 1) {
             $scope.flags.all_users = true;
         }
     }

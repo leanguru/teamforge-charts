@@ -11,6 +11,7 @@
     <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/select2.css" rel="stylesheet">
     <link href="css/selectize.default.css" rel="stylesheet">
+    <link href="css/ui-grid.css" rel="stylesheet">
 
     <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
     <!-- WARNING: Respond.js doesn't work if you view the page via file:// -->
@@ -28,8 +29,11 @@
     <script src="js/select.js"></script>
     <script src="js/teamforge-charts-app.js"></script>
     <script src="js/teamforge-charts-ctrl-epu.js"></script>
+    <script src="js/teamforge-charts-ctrl-ui-grid.js"></script>
     <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
     <script src="js/bootstrap.min.js"></script>
+    <script src="js/ui-grid.js"></script>
+
     <style>
         .chart-legend li {
             list-style-type: none;
@@ -101,6 +105,19 @@
                             <div id="js-legend" class="chart-legend"></div>
                         </div>
                     </div>
+                    <hr>
+                    <div class="row" ng-show="! error_message">
+                        <div class="col-xs-12">
+                            <h3>Drill Down</h3>
+                        </div>
+                    </div>
+                    <div class="row" ng-show="! error_message">
+                        <div class="col-xs-12">
+                            <div ng-controller="uiGridCtrl">
+                                <div id="grid1" ui-grid="{ data: myData, columnDefs: columnDefs, enableFiltering: true, showColumnFooter: true }" class="grid" ui-grid-resize-columns></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -124,6 +141,7 @@
             </div>
         </div>
     </div>
+
     <div class="row well">
         <div class="col-xs-12">
             <b>Import Timestamps:</b><span ng-repeat="(key, value) in meta_data.import_timestamps"> {{key}} : {{value| date:'dd/MM/yyyy hh:mm:ss'}}{{$last ? '' : ', '}}</span>
