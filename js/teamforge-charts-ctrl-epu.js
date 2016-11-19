@@ -51,7 +51,7 @@ app.controller('epuCtrl', function ($scope, $http, $location, parameter) {
                         };
 
                         ui_grid_parameters[tracker].display_columns = [
-                            'tracker','id','assignedTo','title','estimatedEffort','actualEffort','remainingEffort'
+                            'tracker','id','assignedTo','title','date','status','estimatedEffort','actualEffort','remainingEffort'
                         ];
                     }
 
